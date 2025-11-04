@@ -68,3 +68,127 @@ The project will be developed in phases, as outlined in the `trading_company_pla
         *   `company risk-check` - Risk assessment across agents
 *   **Testing:** Added comprehensive unit tests for CLI and configuration utilities.
 *   **Documentation:** Created CLAUDE.md for future AI instances working on this codebase.
+*   **GitHub Repository:** Created and pushed to https://github.com/borosadi/ztrade
+
+## Current Status
+
+### ✅ Phase 1: Foundation - COMPLETE
+
+All Phase 1 objectives have been met:
+- Git repository initialized with proper .gitignore
+- CI/CD pipeline with GitHub Actions (test, lint, security)
+- uv package manager configured with pyproject.toml
+- Claude AI integration for agent decision-making
+- Alpaca broker API fully integrated
+- Agent management system (create, list, status, ask, pause/resume, delete)
+- Company dashboard and monitoring
+- Configuration management utilities
+- Unit tests for CLI and configuration
+- Documentation (CLAUDE.md for AI context, README.md for users)
+
+### 🎯 Ready for Phase 2: Core Features
+
+**Next Steps:**
+1. **TradingView MCP Integration** (`cli/utils/mcp_client.py`)
+   - Implement MCP client to fetch market data from TradingView
+   - Add market data to agent context for decision-making
+   - Create helper functions for chart analysis
+
+2. **Agent Trading Cycle** (implement `agent run` command)
+   - Load agent personality and current state
+   - Fetch market data via TradingView MCP
+   - Call Claude to analyze and make trading decision
+   - Validate decision against risk parameters
+   - Execute trade via Alpaca if approved
+   - Update agent state and performance metrics
+   - Log all decisions and trades
+
+3. **Risk Management Layer**
+   - Implement pre-trade validation checks
+   - Add circuit breaker logic
+   - Create correlation monitoring
+   - Implement position sizing rules
+
+4. **Monitoring Commands** (`cli/commands/monitor.py`)
+   - `monitor trades` - Recent trade history
+   - `monitor logs --follow` - Real-time log streaming
+   - `monitor alerts` - Active alerts and warnings
+   - `monitor decisions <agent_id>` - Agent decision logs
+
+5. **Risk Commands** (`cli/commands/risk.py`)
+   - `risk set-limit` - Update risk parameters
+   - `risk correlations` - Check asset correlations
+   - `risk simulate` - Run risk scenarios
+   - `risk history` - Historical risk metrics
+
+### 🔧 Environment Setup Notes
+
+**Required Environment Variables:**
+- `ALPACA_API_KEY` - Alpaca API key (currently set)
+- `ALPACA_SECRET_KEY` - Alpaca secret key (currently set)
+- `ANTHROPIC_API_KEY` - Currently set to placeholder "YOUR_API_KEY" - needs real key
+- `ALPACA_BASE_URL` - Defaults to paper trading endpoint
+
+**To Test Core Functionality:**
+```bash
+# Set your Anthropic API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Run the CLI
+uv run ztrade hello
+uv run ztrade company dashboard
+uv run ztrade agent list -v
+
+# Create a test agent
+uv run ztrade agent create test_agent
+
+# Ask an agent a question (requires API key)
+uv run ztrade agent ask agent_btc "What's your strategy?"
+```
+
+### 📂 Key Files for Phase 2
+
+**To Implement:**
+- `cli/utils/mcp_client.py` - TradingView MCP integration
+- `cli/commands/monitor.py` - Monitoring commands
+- `cli/commands/risk.py` - Risk management commands
+- Trading cycle logic in `agent run` command
+
+**Existing Agents:**
+- `agents/agent_btc/` - Bitcoin momentum trader
+- `agents/agent_spy/` - SPY mean reversion
+- `agents/agent_forex_eur/` - EUR/USD scalper
+- `agents/agent_tsla/` - TSLA breakout trader
+
+These are placeholder agents with empty/minimal config files - they were created as part of the initial structure but need to be properly configured or recreated using the `agent create` command.
+
+### 🐛 Known Issues / To-Do
+
+- [ ] Update `.env` with real ANTHROPIC_API_KEY before testing agent ask command
+- [ ] Existing placeholder agents need proper configuration
+- [ ] TradingView MCP server integration not started yet
+- [ ] Agent trading cycle (`agent run`) returns placeholder message
+- [ ] Monitoring and risk commands are empty files
+- [ ] Need to configure git user name/email globally
+- [ ] Consider adding more comprehensive error handling for API failures
+
+### 📊 Testing Status
+
+- ✅ CLI tests passing
+- ✅ Configuration tests passing
+- ⏸️ Integration tests with broker (requires valid API keys)
+- ⏸️ Integration tests with Claude (requires valid API key)
+- ⏸️ End-to-end trading cycle tests (Phase 2)
+
+### 📝 Technical Debt
+
+- Consider adding retry logic for API calls
+- Add rate limiting for Alpaca API calls
+- Implement proper logging to files (currently just console)
+- Add input validation for agent creation parameters
+- Consider adding agent validation on startup
+- May need to handle timezone conversions for trading hours
+
+---
+
+**Ready to continue from Phase 2 implementation tomorrow!**
