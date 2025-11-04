@@ -1,0 +1,6 @@
+max_capital_allocation: 100000
+allowed_assets:
+  - "SPY"
+  - "BTC"
+  - "EUR"
+  - "TSLA"
