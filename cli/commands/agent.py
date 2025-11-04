@@ -1,66 +1,364 @@
+"""Agent management commands."""
 import click
+import json
+from datetime import datetime
+from pathlib import Path
+from cli.utils.config import get_config
+from cli.utils.llm import get_agent_llm
+from cli.utils.broker import get_broker
+from cli.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 @click.group()
 def agent():
     """Commands for managing trading agents."""
     pass
 
+
 @agent.command()
-def list():
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed information')
+def list(verbose):
     """Lists all available agents."""
-    click.echo("Listing all agents...")
+    config = get_config()
+    agents = config.list_agents()
+
+    if not agents:
+        click.echo("No agents found.")
+        return
+
+    click.echo(f"\n{'='*60}")
+    click.echo(f"Found {len(agents)} agent(s):\n")
+
+    for agent_id in sorted(agents):
+        agent_config = config.load_agent_config(agent_id)
+        agent_state = config.load_agent_state(agent_id)
+
+        # Basic info
+        agent_info = agent_config.get('agent', {})
+        name = agent_info.get('name', agent_id)
+        asset = agent_info.get('asset', 'N/A')
+        status = agent_info.get('status', 'unknown')
+
+        click.echo(f"  [{agent_id}]")
+        click.echo(f"    Name: {name}")
+        click.echo(f"    Asset: {asset}")
+        click.echo(f"    Status: {status}")
+
+        if verbose and agent_state:
+            pnl = agent_state.get('pnl_today', 0)
+            trades = agent_state.get('trades_today', 0)
+            positions = len(agent_state.get('positions', []))
+            click.echo(f"    Positions: {positions}")
+            click.echo(f"    Daily P&L: ${pnl:.2f}")
+            click.echo(f"    Trades Today: {trades}")
+
+        click.echo()
+
+    click.echo(f"{'='*60}\n")
+
 
 @agent.command()
 @click.argument('agent_id')
-def create(agent_id):
+@click.option('--asset', prompt='Asset symbol', help='Asset to trade (e.g., BTC/USD, SPY)')
+@click.option('--name', prompt='Agent name', help='Descriptive name for the agent')
+@click.option('--strategy', type=click.Choice(['momentum', 'mean_reversion', 'breakout']),
+              prompt='Strategy type', help='Trading strategy')
+@click.option('--risk-tolerance', type=click.Choice(['conservative', 'moderate', 'aggressive']),
+              prompt='Risk tolerance', help='Risk profile')
+@click.option('--capital', type=float, default=10000, help='Allocated capital')
+def create(agent_id, asset, name, strategy, risk_tolerance, capital):
     """Creates a new agent."""
-    click.echo(f"Creating agent {agent_id}...")
+    config = get_config()
+
+    # Check if agent already exists
+    if config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' already exists!", err=True)
+        return
+
+    # Create agent directory
+    agent_dir = config.get_agent_dir(agent_id)
+    agent_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create context.yaml
+    context = {
+        'agent': {
+            'id': agent_id,
+            'name': name,
+            'asset': asset,
+            'status': 'active',
+            'created': datetime.now().isoformat(),
+        },
+        'strategy': {
+            'type': strategy,
+            'timeframe': '15m',
+        },
+        'risk': {
+            'max_position_size': capital * 0.5,
+            'stop_loss': 0.02,
+            'take_profit': 0.04,
+            'max_daily_trades': 5,
+        },
+        'personality': {
+            'risk_tolerance': risk_tolerance,
+        },
+        'performance': {
+            'allocated_capital': capital,
+        }
+    }
+    config.save_yaml(context, str(agent_dir / 'context.yaml'))
+
+    # Create initial state.json
+    state = {
+        'positions': [],
+        'trades_today': 0,
+        'pnl_today': 0.0,
+        'last_update': datetime.now().isoformat(),
+    }
+    config.save_json(state, str(agent_dir / 'state.json'))
+
+    # Create initial performance.json
+    performance = {
+        'total_trades': 0,
+        'winning_trades': 0,
+        'losing_trades': 0,
+        'total_pnl': 0.0,
+    }
+    config.save_json(performance, str(agent_dir / 'performance.json'))
+
+    # Create initial learning.json
+    learning = {
+        'patterns_learned': {},
+        'market_regimes': {},
+    }
+    config.save_json(learning, str(agent_dir / 'learning.json'))
+
+    # Create personality.md template
+    personality = f"""# {name} Trading Philosophy
+
+## Identity
+I am a {risk_tolerance} {strategy} trader specializing in {asset}.
+
+## Core Strategy
+- **Strategy Type**: {strategy}
+- **Risk Tolerance**: {risk_tolerance}
+- **Timeframe**: 15-minute charts
+
+## Trading Rules
+- Maximum position size: ${capital * 0.5:.2f}
+- Stop loss: 2%
+- Take profit: 4%
+- Maximum 5 trades per day
+
+## Market Conditions
+**Best Performance In:**
+- Clear trending markets
+- High volume periods
+
+**Avoid Trading During:**
+- Low volume periods
+- High uncertainty events
+"""
+    with open(agent_dir / 'personality.md', 'w') as f:
+        f.write(personality)
+
+    click.echo(f"\n✓ Agent '{agent_id}' created successfully!")
+    click.echo(f"  Name: {name}")
+    click.echo(f"  Asset: {asset}")
+    click.echo(f"  Strategy: {strategy}")
+    click.echo(f"  Capital: ${capital:.2f}\n")
+
 
 @agent.command()
 @click.argument('agent_id')
 def status(agent_id):
     """Shows the status of a specific agent."""
-    click.echo(f"Showing status for agent {agent_id}...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    # Load agent data
+    agent_config = config.load_agent_config(agent_id)
+    agent_state = config.load_agent_state(agent_id)
+
+    agent_info = agent_config.get('agent', {})
+    risk_info = agent_config.get('risk', {})
+    performance = agent_config.get('performance', {})
+
+    # Display status
+    click.echo(f"\n{'='*60}")
+    click.echo(f"Agent Status: {agent_id}")
+    click.echo(f"{'='*60}\n")
+
+    click.echo(f"Name: {agent_info.get('name', 'N/A')}")
+    click.echo(f"Asset: {agent_info.get('asset', 'N/A')}")
+    click.echo(f"Status: {agent_info.get('status', 'unknown')}")
+    click.echo(f"Created: {agent_info.get('created', 'N/A')}\n")
+
+    click.echo(f"Strategy:")
+    strategy = agent_config.get('strategy', {})
+    click.echo(f"  Type: {strategy.get('type', 'N/A')}")
+    click.echo(f"  Timeframe: {strategy.get('timeframe', 'N/A')}\n")
+
+    click.echo(f"Current State:")
+    click.echo(f"  Positions: {len(agent_state.get('positions', []))}")
+    click.echo(f"  Daily P&L: ${agent_state.get('pnl_today', 0):.2f}")
+    click.echo(f"  Trades Today: {agent_state.get('trades_today', 0)}/{risk_info.get('max_daily_trades', 'N/A')}")
+    click.echo(f"  Last Update: {agent_state.get('last_update', 'N/A')}\n")
+
+    click.echo(f"Risk Parameters:")
+    click.echo(f"  Allocated Capital: ${performance.get('allocated_capital', 0):.2f}")
+    click.echo(f"  Max Position Size: ${risk_info.get('max_position_size', 0):.2f}")
+    click.echo(f"  Stop Loss: {risk_info.get('stop_loss', 0)*100:.1f}%")
+    click.echo(f"  Take Profit: {risk_info.get('take_profit', 0)*100:.1f}%\n")
+
+    # Show positions if any
+    positions = agent_state.get('positions', [])
+    if positions:
+        click.echo(f"Open Positions:")
+        for pos in positions:
+            click.echo(f"  {pos.get('symbol', 'N/A')}: {pos.get('quantity', 0)} @ ${pos.get('entry_price', 0):.2f}")
+            click.echo(f"    P&L: ${pos.get('unrealized_pnl', 0):.2f}\n")
+
+    click.echo(f"{'='*60}\n")
+
 
 @agent.command()
 @click.argument('agent_id')
 @click.argument('question')
 def ask(agent_id, question):
     """Asks an agent for analysis."""
-    click.echo(f"Asking agent {agent_id}: '{question}'...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    # Load agent personality
+    personality = config.load_agent_personality(agent_id)
+    agent_config = config.load_agent_config(agent_id)
+
+    click.echo(f"\nAsking {agent_id}: {question}\n")
+
+    try:
+        llm = get_agent_llm()
+        response = llm.ask(
+            prompt=question,
+            system_prompt=f"You are a trading agent. {personality}"
+        )
+        click.echo(f"Response:\n{response}\n")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
 
 @agent.command()
 @click.argument('agent_id')
 def run(agent_id):
     """Runs an agent's trading cycle."""
     click.echo(f"Running trading cycle for agent {agent_id}...")
+    click.echo("Note: Full trading cycle implementation coming in Phase 2")
+
 
 @agent.command()
 @click.argument('agent_id')
 def pause(agent_id):
     """Pauses an agent."""
-    click.echo(f"Pausing agent {agent_id}...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    agent_config = config.load_agent_config(agent_id)
+    agent_config['agent']['status'] = 'paused'
+    config.save_yaml(agent_config, str(config.get_agent_dir(agent_id) / 'context.yaml'))
+
+    click.echo(f"✓ Agent '{agent_id}' paused.")
+
 
 @agent.command()
 @click.argument('agent_id')
 def resume(agent_id):
     """Resumes an agent."""
-    click.echo(f"Resuming agent {agent_id}...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    agent_config = config.load_agent_config(agent_id)
+    agent_config['agent']['status'] = 'active'
+    config.save_yaml(agent_config, str(config.get_agent_dir(agent_id) / 'context.yaml'))
+
+    click.echo(f"✓ Agent '{agent_id}' resumed.")
+
 
 @agent.command()
 @click.argument('agent_id')
-def config(agent_id):
+@click.option('--capital', type=float, help='Update allocated capital')
+def config(agent_id, capital):
     """Updates an agent's configuration."""
-    click.echo(f"Configuring agent {agent_id}...")
+    cfg = get_config()
+
+    if not cfg.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    agent_config = cfg.load_agent_config(agent_id)
+
+    if capital:
+        agent_config['performance']['allocated_capital'] = capital
+        agent_config['risk']['max_position_size'] = capital * 0.5
+        cfg.save_yaml(agent_config, str(cfg.get_agent_dir(agent_id) / 'context.yaml'))
+        click.echo(f"✓ Updated capital to ${capital:.2f}")
+
 
 @agent.command()
 @click.argument('agent_id')
-def performance(agent_id):
+@click.option('--days', default=30, help='Number of days to show')
+def performance(agent_id, days):
     """Views an agent's performance."""
-    click.echo(f"Viewing performance for agent {agent_id}...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    perf_data = config.load_json(str(config.get_agent_dir(agent_id) / 'performance.json'))
+
+    click.echo(f"\n{'='*60}")
+    click.echo(f"Performance: {agent_id}")
+    click.echo(f"{'='*60}\n")
+
+    click.echo(f"Total Trades: {perf_data.get('total_trades', 0)}")
+    click.echo(f"Winning Trades: {perf_data.get('winning_trades', 0)}")
+    click.echo(f"Losing Trades: {perf_data.get('losing_trades', 0)}")
+
+    total = perf_data.get('total_trades', 0)
+    if total > 0:
+        win_rate = perf_data.get('winning_trades', 0) / total * 100
+        click.echo(f"Win Rate: {win_rate:.1f}%")
+
+    click.echo(f"Total P&L: ${perf_data.get('total_pnl', 0):.2f}\n")
+
 
 @agent.command()
 @click.argument('agent_id')
+@click.confirmation_option(prompt='Are you sure you want to delete this agent?')
 def delete(agent_id):
     """Deletes an agent."""
-    click.echo(f"Deleting agent {agent_id}...")
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    # Delete agent directory
+    import shutil
+    agent_dir = config.get_agent_dir(agent_id)
+    shutil.rmtree(agent_dir)
+
+    click.echo(f"✓ Agent '{agent_id}' deleted.")
