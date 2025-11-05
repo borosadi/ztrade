@@ -197,13 +197,28 @@ class Broker:
         """
         try:
             quote = self.api.get_latest_quote(symbol)
-            return {
-                "symbol": symbol,
-                "bid": float(quote.bp),
-                "ask": float(quote.ap),
-                "bid_size": float(quote.bs),
-                "ask_size": float(quote.as_),
-            }
+
+            # Handle different quote object formats
+            result = {"symbol": symbol}
+
+            # Try to get bid/ask prices
+            if hasattr(quote, 'bp'):
+                result["bid"] = float(quote.bp)
+            elif hasattr(quote, 'bid_price'):
+                result["bid"] = float(quote.bid_price)
+
+            if hasattr(quote, 'ap'):
+                result["ask"] = float(quote.ap)
+            elif hasattr(quote, 'ask_price'):
+                result["ask"] = float(quote.ask_price)
+
+            # Use ask price if available, otherwise bid, otherwise None
+            if "ask" not in result and "bid" not in result:
+                logger.warning(f"No price data in quote for {symbol}")
+                return None
+
+            return result
+
         except Exception as e:
             logger.error(f"Failed to get quote for {symbol}: {e}")
             return None

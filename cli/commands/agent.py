@@ -295,21 +295,44 @@ def run(agent_id, dry_run, manual):
     try:
         # Step 1: Get current market data
         click.echo("1. Fetching market data...")
-        broker = get_broker()
 
-        try:
-            # Get latest price from Alpaca
-            quote = broker.get_latest_quote(asset)
-            current_price = quote.get('ask_price', 0)
+        if manual:
+            # In manual mode, use mock price or prompt user
+            click.echo("   Note: Manual mode - using example price")
+            click.echo("   (In production, this would fetch from Alpaca)")
 
-            if current_price == 0:
-                click.echo("Could not fetch current price. Aborting.", err=True)
-                return
+            # Mock prices for common assets (for demo purposes)
+            mock_prices = {
+                'BTC': 35420.50,
+                'ETH': 1850.25,
+                'SPY': 445.30,
+                'TSLA': 242.80,
+                'AAPL': 178.50,
+            }
 
+            current_price = mock_prices.get(asset, 100.00)
             click.echo(f"   Current price for {asset}: ${current_price:.2f}")
-        except Exception as e:
-            click.echo(f"Error fetching market data: {e}", err=True)
-            return
+        else:
+            broker = get_broker()
+
+            try:
+                # Get latest price from Alpaca
+                quote = broker.get_latest_quote(asset)
+
+                if not quote:
+                    click.echo("Could not fetch current price. Aborting.", err=True)
+                    return
+
+                current_price = quote.get('ask', 0)
+
+                if current_price == 0:
+                    click.echo("Could not fetch current price. Aborting.", err=True)
+                    return
+
+                click.echo(f"   Current price for {asset}: ${current_price:.2f}")
+            except Exception as e:
+                click.echo(f"Error fetching market data: {e}", err=True)
+                return
 
         # Step 2: Build context for AI decision
         click.echo("2. Building decision context...")
