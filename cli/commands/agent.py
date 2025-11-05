@@ -257,13 +257,14 @@ def ask(agent_id, question):
 @agent.command()
 @click.argument('agent_id')
 @click.option('--dry-run', is_flag=True, help='Simulate without executing trades')
-def run(agent_id, dry_run):
+@click.option('--manual', is_flag=True, help='Manual mode: use Claude Code for decisions instead of API')
+def run(agent_id, dry_run, manual):
     """Runs an agent's trading cycle."""
-    from cli.utils.llm import get_llm
     from cli.utils.broker import get_broker
     from cli.utils.risk import RiskValidator
     from cli.utils.trade_executor import TradeExecutor
     import json
+    import re
 
     config = get_config()
 
@@ -281,10 +282,13 @@ def run(agent_id, dry_run):
     if dry_run:
         click.echo(f"\n🔍 DRY RUN MODE - No trades will be executed\n")
 
+    if manual:
+        click.echo(f"\n🤖 MANUAL MODE - Using Claude Code for decisions\n")
+
     click.echo(f"Running trading cycle for {agent_id} ({asset})...")
 
     # Check if agent is active
-    if status != 'active' and not dry_run:
+    if status != 'active' and not dry_run and not manual:
         click.echo(f"Agent is {status}, not active. Skipping.", err=True)
         return
 
@@ -350,31 +354,78 @@ Respond with a JSON object in this format:
 """
 
         # Step 3: Get AI decision
-        click.echo("3. Requesting AI decision...")
-        llm = get_llm()
+        if manual:
+            click.echo("3. Manual decision required...")
+            click.echo("\n" + "="*70)
+            click.echo("DECISION CONTEXT FOR CLAUDE CODE")
+            click.echo("="*70)
+            click.echo(context)
+            click.echo("="*70)
+            click.echo("\nCopy the context above and ask Claude Code to analyze it.")
+            click.echo("Claude Code will provide a JSON decision in this format:")
+            click.echo('{"action": "buy/sell/hold", "quantity": N, "rationale": "...", "confidence": 0.0-1.0, "stop_loss": price}')
+            click.echo("\nPaste the JSON decision below (or press Enter to cancel):")
 
-        try:
-            response = llm.ask(context)
-            click.echo(f"   Raw response length: {len(response)} characters")
+            decision_input = click.prompt("Decision JSON", default="", show_default=False)
 
-            # Try to parse JSON from response
-            # Look for JSON object in the response
-            import re
-            json_match = re.search(r'\{[^{}]*"action"[^{}]*\}', response, re.DOTALL)
-
-            if json_match:
-                decision = json.loads(json_match.group())
-            else:
-                click.echo(f"Could not parse decision from AI response", err=True)
-                click.echo(f"Response: {response[:200]}...")
+            if not decision_input or decision_input.strip() == "":
+                click.echo("No decision provided. Cancelling trade cycle.")
                 return
 
-            click.echo(f"   Decision: {decision.get('action', 'unknown').upper()}")
-            click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+            try:
+                # Try to parse JSON from input
+                json_match = re.search(r'\{[^{}]*"action"[^{}]*\}', decision_input, re.DOTALL)
+                if json_match:
+                    decision = json.loads(json_match.group())
+                else:
+                    decision = json.loads(decision_input)
 
-        except Exception as e:
-            click.echo(f"Error getting AI decision: {e}", err=True)
-            return
+                click.echo(f"   Decision received: {decision.get('action', 'unknown').upper()}")
+                click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+
+            except json.JSONDecodeError as e:
+                click.echo(f"Error: Invalid JSON format: {e}", err=True)
+                return
+        else:
+            click.echo("3. Requesting AI decision...")
+
+            # Check if API key is available
+            import os
+            api_key = os.getenv('ANTHROPIC_API_KEY', '')
+            if not api_key or api_key == 'YOUR_API_KEY':
+                click.echo("\n" + "="*70)
+                click.secho("ERROR: No valid ANTHROPIC_API_KEY found!", fg='red', bold=True)
+                click.echo("="*70)
+                click.echo("\nYou have two options:")
+                click.echo("1. Set a valid API key in your .env file")
+                click.echo("2. Use manual mode: ztrade agent run {} --manual".format(agent_id))
+                click.echo("\nManual mode lets you use Claude Code for trading decisions")
+                click.echo("without needing an API key.\n")
+                return
+
+            from cli.utils.llm import get_llm
+            llm = get_llm()
+
+            try:
+                response = llm.ask(context)
+                click.echo(f"   Raw response length: {len(response)} characters")
+
+                # Try to parse JSON from response
+                json_match = re.search(r'\{[^{}]*"action"[^{}]*\}', response, re.DOTALL)
+
+                if json_match:
+                    decision = json.loads(json_match.group())
+                else:
+                    click.echo(f"Could not parse decision from AI response", err=True)
+                    click.echo(f"Response: {response[:200]}...")
+                    return
+
+                click.echo(f"   Decision: {decision.get('action', 'unknown').upper()}")
+                click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+
+            except Exception as e:
+                click.echo(f"Error getting AI decision: {e}", err=True)
+                return
 
         # Step 4: Validate against risk rules
         click.echo("4. Validating against risk rules...")
