@@ -29,7 +29,7 @@ def dashboard():
     # Get all agents
     agents = config.list_agents()
 
-    click.echo(f"=� Company Overview")
+    click.echo(f"📊 Company Overview")
     click.echo(f"  Total Capital: ${max_capital:,.2f}")
     click.echo(f"  Active Agents: {len(agents)}\n")
 
@@ -38,19 +38,19 @@ def dashboard():
         broker = get_broker()
         account = broker.get_account_info()
 
-        click.echo(f"=� Broker Account (Alpaca)")
+        click.echo(f"💰 Broker Account (Alpaca)")
         click.echo(f"  Equity: ${account['equity']:,.2f}")
         click.echo(f"  Cash: ${account['cash']:,.2f}")
         click.echo(f"  Buying Power: ${account['buying_power']:,.2f}")
 
         if account['trading_blocked']:
-            click.echo(f"  �  Trading is BLOCKED", err=True)
+            click.echo(f"  ⚠️  Trading is BLOCKED", err=True)
         click.echo()
 
         # Get positions
         positions = broker.get_positions()
         if positions:
-            click.echo(f"=� Open Positions ({len(positions)})")
+            click.echo(f"📈 Open Positions ({len(positions)})")
             total_pl = sum(p['unrealized_pl'] for p in positions)
 
             for pos in positions:
@@ -63,14 +63,14 @@ def dashboard():
             click.secho(f"${total_pl:,.2f}", fg="green" if total_pl >= 0 else "red")
             click.echo()
         else:
-            click.echo(f"=� No open positions\n")
+            click.echo(f"📈 No open positions\n")
 
     except Exception as e:
-        click.echo(f"�  Could not connect to broker: {e}\n", err=True)
+        click.echo(f"⚠️  Could not connect to broker: {e}\n", err=True)
 
     # Agent summary
     if agents:
-        click.echo(f"> Agent Summary")
+        click.echo(f"🤖 Agent Summary")
 
         total_capital_allocated = 0
         total_pnl_today = 0
@@ -93,7 +93,7 @@ def dashboard():
             if status == 'active':
                 active_count += 1
 
-            status_icon = "" if status == 'active' else "�"
+            status_icon = "✓" if status == 'active' else "⏸"
             asset = agent_config.get('agent', {}).get('asset', 'N/A')
 
             click.echo(f"  {status_icon} {agent_id} ({asset}): ${pnl:+.2f} today, {trades} trades")
@@ -106,7 +106,7 @@ def dashboard():
         click.echo(f"  Total Trades Today: {total_trades_today}")
         click.echo()
     else:
-        click.echo(f"> No agents configured yet.\n")
+        click.echo(f"🤖 No agents configured yet.\n")
         click.echo(f"  Create your first agent with: ztrade agent create <agent_id>\n")
 
     click.echo(f"{'='*70}\n")
@@ -170,29 +170,29 @@ def status(check_broker):
     # Check configuration files
     company_config = config.load_company_config()
     if company_config:
-        click.echo(" Company configuration loaded")
+        click.echo("✓ Company configuration loaded")
     else:
-        click.echo(" Company configuration not found", err=True)
+        click.echo("✗ Company configuration not found", err=True)
 
     risk_limits = config.load_risk_limits()
     if risk_limits:
-        click.echo(" Risk limits configuration loaded")
+        click.echo("✓ Risk limits configuration loaded")
     else:
-        click.echo(" Risk limits not found", err=True)
+        click.echo("✗ Risk limits not found", err=True)
 
     # Check agents
     agents = config.list_agents()
-    click.echo(f" Found {len(agents)} agent(s)")
+    click.echo(f"✓ Found {len(agents)} agent(s)")
 
     # Check broker if requested
     if check_broker:
         try:
             broker = get_broker()
             account = broker.get_account_info()
-            click.echo(f" Broker connection successful")
+            click.echo(f"✓ Broker connection successful")
             click.echo(f"  Account equity: ${account['equity']:,.2f}")
         except Exception as e:
-            click.echo(f" Broker connection failed: {e}", err=True)
+            click.echo(f"✗ Broker connection failed: {e}", err=True)
 
     click.echo()
 
@@ -242,10 +242,10 @@ def risk_check():
     click.echo(f"Capital Utilization: {utilization:.1f}%\n")
 
     if issues:
-        click.echo("�  Risk Issues Detected:")
+        click.echo("⚠️  Risk Issues Detected:")
         for issue in issues:
             click.echo(f"  - {issue}")
     else:
-        click.echo(" No risk issues detected")
+        click.echo("✓ No risk issues detected")
 
     click.echo()

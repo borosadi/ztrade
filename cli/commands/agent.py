@@ -256,10 +256,154 @@ def ask(agent_id, question):
 
 @agent.command()
 @click.argument('agent_id')
-def run(agent_id):
+@click.option('--dry-run', is_flag=True, help='Simulate without executing trades')
+def run(agent_id, dry_run):
     """Runs an agent's trading cycle."""
-    click.echo(f"Running trading cycle for agent {agent_id}...")
-    click.echo("Note: Full trading cycle implementation coming in Phase 2")
+    from cli.utils.llm import get_llm
+    from cli.utils.broker import get_broker
+    from cli.utils.risk import RiskValidator
+    from cli.utils.trade_executor import TradeExecutor
+    import json
+
+    config = get_config()
+
+    if not config.agent_exists(agent_id):
+        click.echo(f"Error: Agent '{agent_id}' not found!", err=True)
+        return
+
+    # Load agent configuration
+    agent_config = config.load_agent_config(agent_id)
+    agent_state = config.load_agent_state(agent_id)
+
+    asset = agent_config.get('agent', {}).get('asset', 'UNKNOWN')
+    status = agent_config.get('agent', {}).get('status', 'paused')
+
+    if dry_run:
+        click.echo(f"\n🔍 DRY RUN MODE - No trades will be executed\n")
+
+    click.echo(f"Running trading cycle for {agent_id} ({asset})...")
+
+    # Check if agent is active
+    if status != 'active' and not dry_run:
+        click.echo(f"Agent is {status}, not active. Skipping.", err=True)
+        return
+
+    try:
+        # Step 1: Get current market data
+        click.echo("1. Fetching market data...")
+        broker = get_broker()
+
+        try:
+            # Get latest price from Alpaca
+            quote = broker.get_latest_quote(asset)
+            current_price = quote.get('ask_price', 0)
+
+            if current_price == 0:
+                click.echo("Could not fetch current price. Aborting.", err=True)
+                return
+
+            click.echo(f"   Current price for {asset}: ${current_price:.2f}")
+        except Exception as e:
+            click.echo(f"Error fetching market data: {e}", err=True)
+            return
+
+        # Step 2: Build context for AI decision
+        click.echo("2. Building decision context...")
+
+        # Read personality file if it exists
+        personality_file = config.get_agent_dir(agent_id) / 'personality.md'
+        personality = ""
+        if personality_file.exists():
+            with open(personality_file, 'r') as f:
+                personality = f.read()
+
+        context = f"""You are {agent_config.get('agent', {}).get('name', agent_id)}, an autonomous trading agent.
+
+Asset: {asset}
+Current Price: ${current_price:.2f}
+Strategy: {agent_config.get('strategy', {}).get('type', 'N/A')}
+Timeframe: {agent_config.get('strategy', {}).get('timeframe', 'N/A')}
+
+Your Personality and Approach:
+{personality}
+
+Current State:
+- Positions: {len(agent_state.get('positions', []))}
+- Daily P&L: ${agent_state.get('pnl_today', 0):.2f}
+- Trades Today: {agent_state.get('trades_today', 0)}/{agent_config.get('risk', {}).get('max_daily_trades', 10)}
+
+Risk Parameters:
+- Max Position Size: ${agent_config.get('risk', {}).get('max_position_size', 5000):.2f}
+- Stop Loss: {agent_config.get('risk', {}).get('stop_loss', 0.02)*100:.1f}%
+- Min Confidence: {agent_config.get('risk', {}).get('min_confidence', 0.6)*100:.0f}%
+
+Based on the current market conditions and your trading strategy, make a decision.
+
+Respond with a JSON object in this format:
+{{
+    "action": "buy" | "sell" | "hold",
+    "quantity": <number of shares, required for buy/sell>,
+    "rationale": "<your reasoning>",
+    "confidence": <0.0 to 1.0>,
+    "stop_loss": <price level, required for buy>
+}}
+"""
+
+        # Step 3: Get AI decision
+        click.echo("3. Requesting AI decision...")
+        llm = get_llm()
+
+        try:
+            response = llm.ask(context)
+            click.echo(f"   Raw response length: {len(response)} characters")
+
+            # Try to parse JSON from response
+            # Look for JSON object in the response
+            import re
+            json_match = re.search(r'\{[^{}]*"action"[^{}]*\}', response, re.DOTALL)
+
+            if json_match:
+                decision = json.loads(json_match.group())
+            else:
+                click.echo(f"Could not parse decision from AI response", err=True)
+                click.echo(f"Response: {response[:200]}...")
+                return
+
+            click.echo(f"   Decision: {decision.get('action', 'unknown').upper()}")
+            click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+
+        except Exception as e:
+            click.echo(f"Error getting AI decision: {e}", err=True)
+            return
+
+        # Step 4: Validate against risk rules
+        click.echo("4. Validating against risk rules...")
+        validator = RiskValidator()
+
+        is_valid, reason = validator.validate_trade(agent_id, decision, current_price)
+
+        if not is_valid:
+            click.secho(f"   ✗ Trade rejected: {reason}", fg='red')
+            return
+
+        click.secho(f"   ✓ Risk validation passed", fg='green')
+
+        # Step 5: Execute or simulate trade
+        click.echo(f"5. {'Simulating' if dry_run else 'Executing'} trade...")
+        executor = TradeExecutor()
+
+        result = executor.execute_trade(agent_id, decision, current_price, dry_run=dry_run)
+
+        if result.get('success'):
+            click.secho(f"\n✓ {result.get('message')}", fg='green')
+        else:
+            click.secho(f"\n✗ {result.get('message', 'Trade failed')}", fg='red')
+
+    except Exception as e:
+        click.echo(f"\nError during trading cycle: {e}", err=True)
+        logger.error(f"Trading cycle error for {agent_id}: {e}")
+
+    click.echo()
 
 
 @agent.command()

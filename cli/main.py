@@ -2,6 +2,8 @@
 import click
 from cli.commands.agent import agent
 from cli.commands.company import company
+from cli.commands.monitor import monitor
+from cli.commands.risk import risk
 
 
 @click.group()
@@ -18,6 +20,8 @@ def cli():
 # Register command groups
 cli.add_command(agent)
 cli.add_command(company)
+cli.add_command(monitor)
+cli.add_command(risk)
 
 
 @cli.command()
