@@ -334,8 +334,63 @@ def run(agent_id, dry_run, manual):
                 click.echo(f"Error fetching market data: {e}", err=True)
                 return
 
-        # Step 2: Build context for AI decision
-        click.echo("2. Building decision context...")
+        # Step 2: Get market analysis
+        click.echo("2. Analyzing market data...")
+
+        # Get comprehensive market context
+        from cli.utils.market_data import get_market_data_provider
+
+        try:
+            market_provider = get_market_data_provider()
+            timeframe = agent_config.get('strategy', {}).get('timeframe', '15m')
+            market_context = market_provider.get_market_context(asset, timeframe)
+
+            # Build market analysis summary
+            market_summary = f"""
+Market Analysis for {asset}:
+- Current Price: ${current_price:.2f}
+"""
+            if 'technical_indicators' in market_context and market_context['technical_indicators']:
+                indicators = market_context['technical_indicators']
+                if not indicators.get('insufficient_data'):
+                    market_summary += f"""
+Technical Indicators:
+"""
+                    if 'sma_20' in indicators:
+                        market_summary += f"  - 20-period SMA: ${indicators['sma_20']:.2f}\n"
+                    if 'sma_50' in indicators:
+                        market_summary += f"  - 50-period SMA: ${indicators['sma_50']:.2f}\n"
+                    if 'rsi_14' in indicators:
+                        market_summary += f"  - RSI(14): {indicators['rsi_14']}\n"
+                    if 'price_vs_sma20' in indicators:
+                        market_summary += f"  - Price vs SMA20: {indicators['price_vs_sma20']:+.2f}%\n"
+
+            if 'trend_analysis' in market_context and market_context['trend_analysis'].get('trend'):
+                trend = market_context['trend_analysis']
+                market_summary += f"""
+Trend Analysis:
+  - Direction: {trend['trend']}
+  - Strength: {trend['strength']}
+  - Recent Change: {trend.get('change_pct', 0):+.2f}%
+"""
+
+            if 'levels' in market_context and market_context['levels']:
+                levels = market_context['levels']
+                market_summary += f"""
+Support/Resistance:
+  - Support: ${levels.get('support', 0):.2f} ({levels.get('distance_to_support_pct', 0):+.2f}%)
+  - Resistance: ${levels.get('resistance', 0):.2f} ({levels.get('distance_to_resistance_pct', 0):+.2f}%)
+"""
+
+            if not market_context.get('historical_data'):
+                market_summary += "\nNote: Limited historical data available. Analysis based on current price only.\n"
+
+        except Exception as e:
+            logger.warning(f"Could not fetch market analysis: {e}")
+            market_summary = f"Current Price: ${current_price:.2f}\n(Market analysis unavailable)"
+
+        # Step 3: Build context for AI decision
+        click.echo("3. Building decision context...")
 
         # Read personality file if it exists
         personality_file = config.get_agent_dir(agent_id) / 'personality.md'
@@ -347,9 +402,10 @@ def run(agent_id, dry_run, manual):
         context = f"""You are {agent_config.get('agent', {}).get('name', agent_id)}, an autonomous trading agent.
 
 Asset: {asset}
-Current Price: ${current_price:.2f}
 Strategy: {agent_config.get('strategy', {}).get('type', 'N/A')}
 Timeframe: {agent_config.get('strategy', {}).get('timeframe', 'N/A')}
+
+{market_summary}
 
 Your Personality and Approach:
 {personality}
@@ -376,9 +432,9 @@ Respond with a JSON object in this format:
 }}
 """
 
-        # Step 3: Get AI decision
+        # Step 4: Get AI decision
         if manual:
-            click.echo("3. Manual decision required...")
+            click.echo("4. Manual decision required...")
             click.echo("\n" + "="*70)
             click.echo("DECISION CONTEXT FOR CLAUDE CODE")
             click.echo("="*70)
@@ -410,7 +466,7 @@ Respond with a JSON object in this format:
                 click.echo(f"Error: Invalid JSON format: {e}", err=True)
                 return
         else:
-            click.echo("3. Requesting AI decision...")
+            click.echo("4. Requesting AI decision...")
 
             # Check if API key is available
             import os
@@ -450,8 +506,8 @@ Respond with a JSON object in this format:
                 click.echo(f"Error getting AI decision: {e}", err=True)
                 return
 
-        # Step 4: Validate against risk rules
-        click.echo("4. Validating against risk rules...")
+        # Step 5: Validate against risk rules
+        click.echo("5. Validating against risk rules...")
         validator = RiskValidator()
 
         is_valid, reason = validator.validate_trade(agent_id, decision, current_price)
@@ -462,8 +518,8 @@ Respond with a JSON object in this format:
 
         click.secho(f"   ✓ Risk validation passed", fg='green')
 
-        # Step 5: Execute or simulate trade
-        click.echo(f"5. {'Simulating' if dry_run else 'Executing'} trade...")
+        # Step 6: Execute or simulate trade
+        click.echo(f"6. {'Simulating' if dry_run else 'Executing'} trade...")
         executor = TradeExecutor()
 
         result = executor.execute_trade(agent_id, decision, current_price, dry_run=dry_run)
