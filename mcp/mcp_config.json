@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "market-data": {
+      "command": "python",
+      "args": ["mcp/tradingview_server.py"],
+      "description": "Market data server providing TradingView-style analytics"
+    }
+  }
+}

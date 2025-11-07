@@ -1,9 +1,30 @@
 # Manual Mode: Using Claude Code for Trading Decisions
 
-If you don't have an Anthropic API key, you can use **Manual Mode** to leverage Claude Code (the AI assistant you're talking to right now) to make trading decisions for your agents.
+If you don't have an Anthropic API key, you can use **Manual Mode** or **Subagent Mode** to leverage Claude Code (the AI assistant you're talking to right now) to make trading decisions for your agents.
 
-## How It Works
+## Two Modes Available
 
+### 1. Subagent Mode (Fully Automated) ⭐ RECOMMENDED
+
+**How It Works:**
+1. Run an agent with the `--subagent` flag
+2. The system automatically creates a request file for Claude Code
+3. Claude Code monitors the request folder and provides a decision
+4. The system automatically picks up the decision and executes
+5. **No manual copy-paste required!**
+
+**Usage:**
+```bash
+# Subagent mode with dry-run (safest for testing)
+uv run ztrade agent run test_btc --subagent --dry-run
+
+# Subagent mode with paper trading
+uv run ztrade agent run test_btc --subagent
+```
+
+### 2. Manual Mode (Copy-Paste)
+
+**How It Works:**
 1. Run an agent with the `--manual` flag
 2. The system fetches market data and builds the decision context
 3. The context is displayed to you
@@ -12,19 +33,58 @@ If you don't have an Anthropic API key, you can use **Manual Mode** to leverage 
 6. You paste the decision back into the CLI
 7. The system validates and executes the trade
 
-## Usage
-
-### Run Agent in Manual Mode
-
+**Usage:**
 ```bash
-# Manual mode (uses Claude Code for decisions)
+# Manual mode (requires copy-paste)
 uv run ztrade agent run test_btc --manual
-
-# Manual + dry-run (simulate without executing)
-uv run ztrade agent run test_btc --manual --dry-run
 ```
 
-### Workflow Example
+## Detailed Workflow Examples
+
+### Subagent Mode Workflow (Automated)
+
+**Complete Example:**
+
+1. **Start the trading cycle in one terminal:**
+   ```bash
+   uv run ztrade agent run test_btc --subagent --dry-run
+   ```
+
+2. **The CLI automatically creates a request:**
+   ```
+   🤖 SUBAGENT MODE - Automatically using Claude Code subagent for decisions
+
+   Running trading cycle for test_btc (BTC)...
+   1. Fetching market data...
+      Current price for BTC: $35,420.50
+   4. Launching Claude Code subagent for decision...
+
+   🤖 SUBAGENT REQUEST CREATED
+   Request ID: test_btc_1762450145
+   Waiting for Claude Code subagent...
+   ```
+
+3. **Claude Code automatically processes the request in the background**
+   - Reads the context from `oversight/subagent_requests/`
+   - Analyzes market conditions
+   - Makes trading decision
+   - Writes response to `oversight/subagent_responses/`
+
+4. **The system automatically completes:**
+   ```
+   ✓ Subagent response received!
+      Decision received: HOLD
+      Confidence: 65%
+   5. Validating against risk rules...
+      ✓ Risk validation passed
+   6. Simulating trade...
+
+   ✓ Holding position
+   ```
+
+**That's it! Fully automated with no manual intervention.**
+
+### Manual Mode Workflow (Copy-Paste)
 
 1. **Start the trading cycle:**
    ```bash
@@ -151,8 +211,16 @@ All decisions (whether from API or manual mode) go through the same risk validat
 - Confidence must meet minimum threshold
 - Daily P&L must be within loss limits
 
-## Benefits of Manual Mode
+## Benefits of No-API-Key Trading
 
+### Subagent Mode Benefits
+1. **Fully Automated** - No manual copy-paste, works seamlessly
+2. **No API costs** - Use Claude Code instead of paying for Anthropic API
+3. **Fast decisions** - Claude Code responds within seconds
+4. **Multiple agents** - Can handle multiple trading agents simultaneously
+5. **Production ready** - Can run continuously with proper monitoring
+
+### Manual Mode Benefits
 1. **No API costs** - Use Claude Code instead of paying for Anthropic API
 2. **Learning** - See exactly how trading decisions are made
 3. **Oversight** - Full control over every trade
@@ -164,6 +232,10 @@ All decisions (whether from API or manual mode) go through the same risk validat
 For maximum safety while learning:
 
 ```bash
+# Subagent mode with dry-run (recommended)
+uv run ztrade agent run test_btc --subagent --dry-run
+
+# Manual mode with dry-run
 uv run ztrade agent run test_btc --manual --dry-run
 ```
 
@@ -173,6 +245,27 @@ This allows you to:
 - Validate risk rules
 - See decision logging
 - All without executing real trades or using API credits
+
+## Subagent Helper Commands
+
+When using subagent mode, you have additional commands available:
+
+```bash
+# List all pending subagent requests
+uv run ztrade subagent list
+
+# Show details of a specific request
+uv run ztrade subagent show <request_id>
+
+# Manually respond to a request (if needed)
+uv run ztrade subagent respond <request_id> '{"action":"hold",...}'
+
+# Process the next pending request (for debugging)
+uv run ztrade subagent process
+
+# Clear all pending requests (cleanup)
+uv run ztrade subagent clear
+```
 
 ## Transition to Automated Mode
 

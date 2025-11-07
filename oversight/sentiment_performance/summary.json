@@ -1,0 +1,123 @@
+{
+  "generated_at": "2025-11-07T22:37:19.380461",
+  "lookback_days": 30,
+  "sentiment_accuracy": {
+    "lookback_days": 30,
+    "total_trades_analyzed": 8,
+    "bullish_sentiment": {
+      "count": 5,
+      "mean_return": 1.83,
+      "std_dev": 1.01,
+      "win_rate": 1.0,
+      "avg_win": 1.83,
+      "avg_loss": 0,
+      "sharpe_ratio": 1.8,
+      "max_loss": 0.47,
+      "max_win": 3.44
+    },
+    "bearish_sentiment": {
+      "count": 2,
+      "mean_return": -1.12,
+      "std_dev": 0.87,
+      "win_rate": 0.0,
+      "avg_win": 0,
+      "avg_loss": -1.12,
+      "sharpe_ratio": -1.29,
+      "max_loss": -1.99,
+      "max_win": -0.26
+    },
+    "neutral_sentiment": {
+      "count": 1,
+      "mean_return": 0.17,
+      "std_dev": 0.0,
+      "win_rate": 1.0,
+      "avg_win": 0.17,
+      "avg_loss": 0,
+      "sharpe_ratio": 0,
+      "max_loss": 0.17,
+      "max_win": 0.17
+    },
+    "overall_win_rate": 0.75
+  },
+  "source_effectiveness": {
+    "lookback_days": 30,
+    "total_trades_analyzed": 8,
+    "source_metrics": {
+      "news": {
+        "count": 7,
+        "mean_return": 1.05,
+        "std_dev": 1.61,
+        "win_rate": 0.86,
+        "avg_win": 1.55,
+        "avg_loss": -1.99,
+        "sharpe_ratio": 0.65,
+        "max_loss": -1.99,
+        "max_win": 3.44
+      },
+      "reddit": {
+        "count": 5,
+        "mean_return": 1.05,
+        "std_dev": 1.94,
+        "win_rate": 0.6,
+        "avg_win": 2.49,
+        "avg_loss": -1.12,
+        "sharpe_ratio": 0.54,
+        "max_loss": -1.99,
+        "max_win": 3.44
+      },
+      "sec": {
+        "count": 3,
+        "mean_return": 2.09,
+        "std_dev": 1.22,
+        "win_rate": 1.0,
+        "avg_win": 2.09,
+        "avg_loss": 0,
+        "sharpe_ratio": 1.71,
+        "max_loss": 0.47,
+        "max_win": 3.44
+      }
+    },
+    "source_ranking": [
+      "sec",
+      "news",
+      "reddit"
+    ]
+  },
+  "agreement_impact": {
+    "lookback_days": 30,
+    "total_trades_analyzed": 8,
+    "high_agreement": {
+      "count": 4,
+      "mean_return": 1.37,
+      "std_dev": 2.04,
+      "win_rate": 0.75,
+      "avg_win": 2.49,
+      "avg_loss": -1.99,
+      "sharpe_ratio": 0.67,
+      "max_loss": -1.99,
+      "max_win": 3.44
+    },
+    "medium_agreement": {
+      "count": 1,
+      "mean_return": 0.47,
+      "std_dev": 0.0,
+      "win_rate": 1.0,
+      "avg_win": 0.47,
+      "avg_loss": 0,
+      "sharpe_ratio": 0,
+      "max_loss": 0.47,
+      "max_win": 0.47
+    },
+    "low_agreement": {
+      "count": 3,
+      "mean_return": 0.37,
+      "std_dev": 0.61,
+      "win_rate": 0.67,
+      "avg_win": 0.68,
+      "avg_loss": -0.26,
+      "sharpe_ratio": 0.61,
+      "max_loss": -0.26,
+      "max_win": 1.19
+    }
+  }
+}

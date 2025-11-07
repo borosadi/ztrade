@@ -6,7 +6,7 @@ This project aims to build an AI-powered trading company. The system will consis
 
 *   **AI:** Claude 4 (Sonnet 4.5) via Anthropic API
 *   **Broker:** Alpaca (starting with paper trading)
-*   **Market Data:** TradingView via Model Context Protocol (MCP)
+*   **Market Data:** Alpaca API (real-time), Yahoo Finance (fallback)
 *   **Programming Language:** Python 3.10+
 *   **Interface:** Click CLI
 
@@ -235,43 +235,57 @@ All Phase 2 objectives have been met:
 - ✅ Decision and trade logging to JSONL files
 - ✅ CLI properly structured with all command groups
 
+### 📝 Project State Reconciliation (2025-11-06)
+
+**Note:** The project's direction for market data has been updated based on the `CLAUDE.md` file (dated 2025-11-06). The plan to integrate TradingView via a Model Context Protocol (MCP) has been deprecated due to dependency issues. The system now uses a direct Alpaca API integration for real-time data, with Yahoo Finance as a fallback. The following plan for Phase 3 reflects this new direction.
+
 ### 🎯 Ready for Phase 3: Advanced Risk & Safety
 
-**Next Steps:**
-1. **TradingView MCP Integration** (`cli/utils/mcp_client.py`)
-   - Implement MCP client to fetch real market data
-   - Add technical indicators and chart analysis
-   - Integrate into agent trading cycle
+The primary goals for this phase are to implement robust, automated safety mechanisms and enhance real-time risk monitoring across the entire system.
 
-2. **Circuit Breakers**
-   - Implement automatic trading halt on severe losses
-   - Add market volatility detection (VIX monitoring)
-   - Create emergency stop mechanisms
+#### 1. Implement System-Wide Circuit Breakers
 
-3. **Enhanced Risk Monitoring**
-   - Real-time correlation tracking
-   - Position concentration monitoring
-   - Daily loss circuit breakers
+**Goal:** Automatically halt all trading activity during periods of high risk to prevent catastrophic losses.
 
-4. **Agent Learning System** (Phase 4 preview)
-   - Track decision outcomes
-   - Pattern recognition
-   - Performance-based adjustments
+*   **Actionable Steps:**
+    1.  **Create Manual Emergency Stop:** Create `shared/EMERGENCY_STOP.json` with a `halt_trading` flag to serve as a master kill switch.
+    2.  **Implement Company-Wide Daily Loss Limit:** Add a `company_daily_loss_limit_percent` to `config/risk_limits.yaml` and a check in `cli/utils/risk.py`.
+    3.  **Add Market Volatility Breaker (VIX):** Add a `max_vix_level` to `config/risk_limits.yaml` and a function in `cli/utils/risk.py` to halt trading if the VIX index (`^VIX`) is too high.
+    4.  **Integrate Checks:** Call these new circuit breaker functions at the start of every agent's trading cycle in `cli/commands/agent.py`.
 
-### 📝 Updated Technical Debt / To-Do
+#### 2. Enhance Real-Time Risk Monitoring
 
-- [x] Agent trading cycle implementation
-- [x] Monitoring commands
-- [x] Risk management commands
-- [x] Dependency conflicts resolved
-- [ ] Update `.env` with real ANTHROPIC_API_KEY before testing
-- [ ] TradingView MCP server integration
-- [ ] End-to-end testing with real market data
-- [ ] Configure git user name/email globally
-- [ ] Add retry logic for API calls
-- [ ] Implement file-based logging (currently logs directory structure exists)
-- [ ] Create integration tests for trading cycle
+**Goal:** Move from agent-level risk checks to a holistic, portfolio-wide view of risk.
+
+*   **Actionable Steps:**
+    1.  **Implement Real-time Correlation Tracking:** Create a command `uv run ztrade risk update-correlations` that calculates the correlation matrix for all traded assets and saves it to `shared/correlations.json`.
+    2.  **Add Position Concentration Monitoring:** Add a `max_position_concentration_percent` to `config/risk_limits.yaml` and implement a pre-trade check in `cli/utils/risk.py` to prevent any single position from exceeding a percentage of the total portfolio.
+
+#### 3. Implement Continuous Trading and Agent Learning (Phase 4 Preview)
+
+**Goal:** Enable agents to run autonomously and begin the framework for learning from performance.
+
+*   **Actionable Steps:**
+    1.  **Enable Continuous Trading Loop:** Add a `--continuous` flag to the `agent run` command that wraps the trading cycle in a `while True:` loop with an appropriate `time.sleep()` based on the agent's strategy timeframe.
+    2.  **Track and Record Decision Outcomes:** Modify `cli/utils/trade_executor.py` to monitor and record the final P&L of each closed position, linking it back to the original decision ID.
+    3.  **Create Agent Learning File:** Append a "learning record" (market conditions + trade outcome) to the agent's `learning.json` file for every closed trade.
+
+### 📝 Updated To-Do / Technical Debt
+
+- [ ] **Implement Phase 3 Features:**
+  - [ ] Manual Emergency Stop (`shared/EMERGENCY_STOP.json`)
+  - [ ] Company-wide daily loss limit
+  - [ ] VIX-based volatility breaker
+  - [ ] Asset correlation tracking (`risk update-correlations`)
+  - [ ] Position concentration checks
+  - [ ] Continuous trading loop (`--continuous` flag)
+  - [ ] Agent learning data collection (`learning.json`)
+- [ ] Update `.env` with real ANTHROPIC_API_KEY before testing automated modes.
+- [ ] Configure git user name/email globally.
+- [ ] Add retry logic and rate limiting for API calls.
+- [ ] Implement file-based logging (the `logs` directory structure exists but is not fully used).
+- [ ] Create integration tests for the full trading cycle.
 
 ---
 
-**Phase 2 Complete! Ready to start Phase 3 (Advanced Risk & Safety) or Phase 4 (Agent Learning).**
+**Phase 2 Complete! Ready to start Phase 3 (Advanced Risk & Safety).**

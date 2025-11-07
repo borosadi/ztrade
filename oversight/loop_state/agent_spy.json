@@ -1,0 +1,9 @@
+{
+  "agent_id": "agent_spy",
+  "status": "running",
+  "cycles_completed": 1,
+  "started_at": "2025-11-07T22:56:26.646230",
+  "last_cycle_at": "2025-11-07T22:56:26.646415",
+  "last_error": null,
+  "interval_seconds": 2
+}

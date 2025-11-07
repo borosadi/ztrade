@@ -223,6 +223,52 @@ class Broker:
             logger.error(f"Failed to get quote for {symbol}: {e}")
             return None
 
+    def get_bars(
+        self,
+        symbol: str,
+        timeframe: str = "1day",
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Get historical price bars from Alpaca.
+
+        Args:
+            symbol: Stock/crypto symbol
+            timeframe: Bar timeframe ('1min', '5min', '15min', '1hour', '1day', etc.)
+            limit: Number of bars to fetch (max 10000)
+
+        Returns:
+            List of bar dicts with OHLCV data
+        """
+        try:
+            bars = self.api.get_bars(
+                symbol,
+                timeframe,
+                limit=min(limit, 10000)
+            )
+
+            if not bars or len(bars.df) == 0:
+                logger.warning(f"No bars available for {symbol}")
+                return []
+
+            # Convert DataFrame to list of dicts
+            result = []
+            for idx, row in bars.df.iterrows():
+                result.append({
+                    "timestamp": idx.isoformat() if hasattr(idx, 'isoformat') else str(idx),
+                    "open": float(row['open']),
+                    "high": float(row['high']),
+                    "low": float(row['low']),
+                    "close": float(row['close']),
+                    "volume": int(row['volume']),
+                })
+
+            logger.info(f"Fetched {len(result)} bars for {symbol} ({timeframe})")
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to get bars for {symbol}: {e}")
+            return []
+
 
 def get_broker() -> Broker:
     """Factory function to get a broker instance.

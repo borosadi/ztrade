@@ -4,6 +4,8 @@ from cli.commands.agent import agent
 from cli.commands.company import company
 from cli.commands.monitor import monitor
 from cli.commands.risk import risk
+from cli.commands.subagent import subagent
+from cli.commands.loop import loop
 
 
 @click.group()
@@ -22,6 +24,8 @@ cli.add_command(agent)
 cli.add_command(company)
 cli.add_command(monitor)
 cli.add_command(risk)
+cli.add_command(subagent)
+cli.add_command(loop)
 
 
 @cli.command()
