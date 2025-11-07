@@ -2,6 +2,8 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from cli.utils.broker import get_broker
+from cli.utils.mcp_client import get_mcp_client
+from cli.utils.sentiment_aggregator import get_sentiment_aggregator
 from cli.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -12,6 +14,8 @@ class MarketDataProvider:
 
     def __init__(self):
         self.broker = get_broker()
+        self.mcp_client = get_mcp_client()
+        self.sentiment_aggregator = get_sentiment_aggregator()
 
     def get_market_context(
         self, symbol: str, timeframe: str = "15m", lookback_periods: int = 100
@@ -40,15 +44,70 @@ class MarketDataProvider:
         }
 
         try:
-            # Get current price
-            quote = self.broker.get_latest_quote(symbol)
-            if quote:
-                context["current_price"] = quote.get("ask", quote.get("bid", 0))
-            else:
-                logger.warning(f"Could not fetch quote for {symbol}")
+            # Get current price from Alpaca (primary) or MCP (fallback)
+            try:
+                # Try Alpaca first for real-time data
+                quote = self.broker.get_latest_quote(symbol)
+                if quote:
+                    context["current_price"] = quote.get("ask", quote.get("bid", 0))
+                    context["quote"] = {
+                        "symbol": symbol,
+                        "bid": quote.get("bid", 0),
+                        "ask": quote.get("ask", 0),
+                        "price": quote.get("ask", quote.get("bid", 0))
+                    }
+                    logger.info(f"Alpaca quote for {symbol}: ${context['current_price']:.2f}")
+                else:
+                    # Fallback to Yahoo Finance via MCP
+                    quote_data = self.mcp_client.get_quote(symbol)
+                    if "error" not in quote_data:
+                        context["current_price"] = quote_data.get("price", 0)
+                        context["quote"] = quote_data
+                    else:
+                        logger.warning(f"No quote available for {symbol}")
+                        context["current_price"] = 0
+            except Exception as e:
+                logger.warning(f"Could not fetch quote for {symbol}: {e}")
                 context["current_price"] = 0
 
-            # Get historical bars
+            # Get technical indicators from MCP
+            try:
+                indicators = self.mcp_client.get_technical_indicators(symbol, period="3mo", interval=self._convert_timeframe(timeframe))
+                if "error" not in indicators:
+                    context["technical_indicators"] = indicators
+            except Exception as e:
+                logger.warning(f"Could not fetch indicators for {symbol}: {e}")
+
+            # Get trend analysis from MCP
+            try:
+                trend = self.mcp_client.analyze_trend(symbol, period="1mo")
+                if "error" not in trend:
+                    context["trend_analysis"] = trend
+            except Exception as e:
+                logger.warning(f"Could not fetch trend for {symbol}: {e}")
+
+            # Get multi-source sentiment analysis (News + Reddit + SEC)
+            try:
+                sentiment = self.sentiment_aggregator.get_aggregated_sentiment(
+                    symbol,
+                    news_lookback_hours=24,
+                    reddit_lookback_hours=24,
+                    sec_lookback_days=30
+                )
+                if "error" not in sentiment:
+                    context["sentiment"] = sentiment
+                    sources_str = ", ".join(sentiment.get("sources_used", []))
+                    logger.info(
+                        f"Aggregated sentiment for {symbol}: {sentiment['overall_sentiment']} "
+                        f"(score: {sentiment['sentiment_score']}, "
+                        f"confidence: {sentiment['confidence']}, "
+                        f"sources: {sources_str}, "
+                        f"agreement: {sentiment.get('agreement_level', 0):.0%})"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not fetch aggregated sentiment for {symbol}: {e}")
+
+            # Get historical bars for additional analysis
             bars = self._get_historical_bars(symbol, timeframe, lookback_periods)
 
             if bars and len(bars) > 0:
@@ -82,24 +141,73 @@ class MarketDataProvider:
 
         return context
 
+    def _convert_timeframe(self, timeframe: str) -> str:
+        """Convert agent timeframe to Yahoo Finance interval."""
+        mapping = {
+            "5m": "5m",
+            "15m": "15m",
+            "1h": "1h",
+            "4h": "1h",  # Yahoo doesn't have 4h, use 1h
+            "daily": "1d",
+            "1d": "1d"
+        }
+        return mapping.get(timeframe, "1d")
+
     def _get_historical_bars(
         self, symbol: str, timeframe: str, lookback: int
     ) -> List[Dict[str, Any]]:
         """
-        Fetch historical price bars.
+        Fetch historical price bars via MCP server.
 
-        Note: This is a placeholder. In production, you would:
-        1. Use Alpaca's get_bars() API
-        2. Or integrate TradingView via MCP
-        3. Or use another data provider
+        Args:
+            symbol: Asset symbol
+            timeframe: Time interval
+            lookback: Number of periods
+
+        Returns:
+            List of bar dictionaries with OHLCV data
         """
-        # For now, return empty - this would be implemented with real data source
-        # In Phase 3, we'll add TradingView MCP integration here
-
         logger.info(f"Fetching {lookback} {timeframe} bars for {symbol}")
 
-        # Placeholder: Would fetch from Alpaca or TradingView
-        return []
+        try:
+            # Determine period based on lookback and timeframe
+            interval = self._convert_timeframe(timeframe)
+
+            # Calculate appropriate period
+            if "m" in interval:  # minutes
+                period = "5d"  # 5 days of minute data
+            elif "h" in interval:  # hours
+                period = "1mo"  # 1 month of hourly data
+            else:  # daily
+                period = "1y"  # 1 year of daily data
+
+            # Get data from MCP
+            hist_data = self.mcp_client.get_historical_data(
+                symbol, period=period, interval=interval
+            )
+
+            if "error" in hist_data:
+                logger.warning(f"Error fetching historical data: {hist_data['error']}")
+                return []
+
+            # Convert to bar format
+            bars = []
+            for price_point in hist_data.get("prices", []):
+                bars.append({
+                    "timestamp": price_point["date"],
+                    "close": price_point["close"],
+                    "volume": price_point["volume"],
+                    "open": price_point.get("open", price_point["close"]),
+                    "high": price_point.get("high", price_point["close"]),
+                    "low": price_point.get("low", price_point["close"]),
+                })
+
+            logger.info(f"Fetched {len(bars)} bars for {symbol}")
+            return bars
+
+        except Exception as e:
+            logger.error(f"Error fetching historical bars for {symbol}: {e}")
+            return []
 
     def _calculate_indicators(self, bars: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Calculate technical indicators from price bars."""

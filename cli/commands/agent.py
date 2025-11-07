@@ -258,7 +258,8 @@ def ask(agent_id, question):
 @click.argument('agent_id')
 @click.option('--dry-run', is_flag=True, help='Simulate without executing trades')
 @click.option('--manual', is_flag=True, help='Manual mode: use Claude Code for decisions instead of API')
-def run(agent_id, dry_run, manual):
+@click.option('--subagent', is_flag=True, help='Subagent mode: automatically use Claude Code subagent for decisions')
+def run(agent_id, dry_run, manual, subagent):
     """Runs an agent's trading cycle."""
     from cli.utils.broker import get_broker
     from cli.utils.risk import RiskValidator
@@ -285,10 +286,13 @@ def run(agent_id, dry_run, manual):
     if manual:
         click.echo(f"\n🤖 MANUAL MODE - Using Claude Code for decisions\n")
 
+    if subagent:
+        click.echo(f"\n🤖 SUBAGENT MODE - Automatically using Claude Code subagent for decisions\n")
+
     click.echo(f"Running trading cycle for {agent_id} ({asset})...")
 
     # Check if agent is active
-    if status != 'active' and not dry_run and not manual:
+    if status != 'active' and not dry_run and not manual and not subagent:
         click.echo(f"Agent is {status}, not active. Skipping.", err=True)
         return
 
@@ -296,91 +300,113 @@ def run(agent_id, dry_run, manual):
         # Step 1: Get current market data
         click.echo("1. Fetching market data...")
 
-        if manual:
-            # In manual mode, use mock price or prompt user
-            click.echo("   Note: Manual mode - using example price")
-            click.echo("   (In production, this would fetch from Alpaca)")
+        broker = get_broker()
 
-            # Mock prices for common assets (for demo purposes)
-            mock_prices = {
-                'BTC': 35420.50,
-                'ETH': 1850.25,
-                'SPY': 445.30,
-                'TSLA': 242.80,
-                'AAPL': 178.50,
-            }
+        try:
+            # Get latest price from Alpaca
+            quote = broker.get_latest_quote(asset)
 
-            current_price = mock_prices.get(asset, 100.00)
-            click.echo(f"   Current price for {asset}: ${current_price:.2f}")
-        else:
-            broker = get_broker()
-
-            try:
-                # Get latest price from Alpaca
-                quote = broker.get_latest_quote(asset)
-
-                if not quote:
-                    click.echo("Could not fetch current price. Aborting.", err=True)
-                    return
-
-                current_price = quote.get('ask', 0)
-
-                if current_price == 0:
-                    click.echo("Could not fetch current price. Aborting.", err=True)
-                    return
-
-                click.echo(f"   Current price for {asset}: ${current_price:.2f}")
-            except Exception as e:
-                click.echo(f"Error fetching market data: {e}", err=True)
+            if not quote:
+                click.echo("Could not fetch current price. Aborting.", err=True)
                 return
+
+            current_price = quote.get('ask', 0)
+
+            if current_price == 0:
+                click.echo("Could not fetch current price. Aborting.", err=True)
+                return
+
+            click.echo(f"   Current price for {asset}: ${current_price:.2f}")
+        except Exception as e:
+            click.echo(f"Error fetching market data: {e}", err=True)
+            return
 
         # Step 2: Get market analysis
         click.echo("2. Analyzing market data...")
 
         # Get comprehensive market context
         from cli.utils.market_data import get_market_data_provider
+        from cli.utils.technical_analyzer import get_technical_analyzer
+        import time
+
+        performance_metrics = {}
 
         try:
+            # Fetch market data
+            start_time = time.time()
             market_provider = get_market_data_provider()
             timeframe = agent_config.get('strategy', {}).get('timeframe', '15m')
             market_context = market_provider.get_market_context(asset, timeframe)
+            performance_metrics['data_fetch_ms'] = (time.time() - start_time) * 1000
 
-            # Build market analysis summary
+            # Run technical analysis (hybrid approach: traditional methods)
+            start_time = time.time()
+            technical_analyzer = get_technical_analyzer()
+            technical_analysis = technical_analyzer.analyze(market_context)
+            performance_metrics['technical_analysis_ms'] = technical_analysis.computation_time_ms
+
+            # Log TA performance
+            click.echo(f"   Technical analysis completed in {technical_analysis.computation_time_ms:.1f}ms")
+            click.echo(f"   Overall signal: {technical_analysis.overall_signal.value} (confidence: {technical_analysis.overall_confidence:.2f})")
+
+            # Build market analysis summary using structured signals
             market_summary = f"""
 Market Analysis for {asset}:
 - Current Price: ${current_price:.2f}
-"""
-            if 'technical_indicators' in market_context and market_context['technical_indicators']:
-                indicators = market_context['technical_indicators']
-                if not indicators.get('insufficient_data'):
-                    market_summary += f"""
-Technical Indicators:
-"""
-                    if 'sma_20' in indicators:
-                        market_summary += f"  - 20-period SMA: ${indicators['sma_20']:.2f}\n"
-                    if 'sma_50' in indicators:
-                        market_summary += f"  - 50-period SMA: ${indicators['sma_50']:.2f}\n"
-                    if 'rsi_14' in indicators:
-                        market_summary += f"  - RSI(14): {indicators['rsi_14']}\n"
-                    if 'price_vs_sma20' in indicators:
-                        market_summary += f"  - Price vs SMA20: {indicators['price_vs_sma20']:+.2f}%\n"
 
-            if 'trend_analysis' in market_context and market_context['trend_analysis'].get('trend'):
-                trend = market_context['trend_analysis']
-                market_summary += f"""
-Trend Analysis:
-  - Direction: {trend['trend']}
-  - Strength: {trend['strength']}
-  - Recent Change: {trend.get('change_pct', 0):+.2f}%
-"""
+Technical Analysis Summary:
+- Overall Signal: {technical_analysis.overall_signal.value.upper()}
+- Overall Confidence: {technical_analysis.overall_confidence:.2%}
+- Analysis Time: {technical_analysis.computation_time_ms:.1f}ms
 
-            if 'levels' in market_context and market_context['levels']:
-                levels = market_context['levels']
-                market_summary += f"""
-Support/Resistance:
-  - Support: ${levels.get('support', 0):.2f} ({levels.get('distance_to_support_pct', 0):+.2f}%)
-  - Resistance: ${levels.get('resistance', 0):.2f} ({levels.get('distance_to_resistance_pct', 0):+.2f}%)
+Individual Technical Signals:
 """
+            for signal in technical_analysis.signals:
+                market_summary += f"  [{signal.signal.value.upper()}] {signal.indicator}: {signal.reasoning} (confidence: {signal.confidence:.2f})\n"
+
+            # Add multi-source sentiment if available
+            if 'sentiment' in market_context:
+                sentiment = market_context['sentiment']
+                market_summary += f"""
+Multi-Source Sentiment Analysis:
+- Overall Sentiment: {sentiment.get('overall_sentiment', 'neutral').upper()}
+- Sentiment Score: {sentiment.get('sentiment_score', 0):.2f} (range: -1 to +1)
+- Confidence: {sentiment.get('confidence', 0):.2%}
+- Sources Used: {', '.join(sentiment.get('sources_used', []))}
+- Agreement Level: {sentiment.get('agreement_level', 0):.0%}
+"""
+                # Add breakdown by source
+                source_breakdown = sentiment.get('source_breakdown', {})
+
+                if 'news' in source_breakdown:
+                    news = source_breakdown['news']
+                    market_summary += f"\nNews (Alpaca/Benzinga):\n"
+                    market_summary += f"  Sentiment: {news.get('overall_sentiment', 'neutral').upper()} ({news.get('sentiment_score', 0):.2f})\n"
+                    market_summary += f"  Articles: {news.get('article_count', 0)}\n"
+                    if news.get('top_headlines'):
+                        market_summary += f"  Top Headlines:\n"
+                        for i, headline in enumerate(news.get('top_headlines', [])[:2], 1):
+                            market_summary += f"    {i}. {headline}\n"
+
+                if 'reddit' in source_breakdown:
+                    reddit = source_breakdown['reddit']
+                    market_summary += f"\nReddit (r/wallstreetbets, r/stocks):\n"
+                    market_summary += f"  Sentiment: {reddit.get('overall_sentiment', 'neutral').upper()} ({reddit.get('sentiment_score', 0):.2f})\n"
+                    market_summary += f"  Mentions: {reddit.get('mention_count', 0)} ({reddit.get('post_count', 0)} posts, {reddit.get('comment_count', 0)} comments)\n"
+                    market_summary += f"  Trending: {reddit.get('trending_score', 0):.1f} mentions/hour\n"
+                    if reddit.get('top_posts'):
+                        top_post = reddit['top_posts'][0]
+                        market_summary += f"  Top Post: \"{top_post.get('title', 'N/A')[:80]}...\" ({top_post.get('score', 0)} upvotes)\n"
+
+                if 'sec' in source_breakdown:
+                    sec = source_breakdown['sec']
+                    market_summary += f"\nSEC Filings (EDGAR):\n"
+                    market_summary += f"  Sentiment: {sec.get('overall_sentiment', 'neutral').upper()} ({sec.get('sentiment_score', 0):.2f})\n"
+                    market_summary += f"  Recent Filings: {sec.get('filing_count', 0)} in last {sec.get('lookback_days', 30)} days\n"
+                    if sec.get('material_events'):
+                        market_summary += f"  Material Events (8-K): {len(sec['material_events'])}\n"
+                        for event in sec['material_events'][:2]:
+                            market_summary += f"    - {event.get('date')}: {event.get('description')} (sentiment: {event.get('sentiment', 0):.2f})\n"
 
             if not market_context.get('historical_data'):
                 market_summary += "\nNote: Limited historical data available. Analysis based on current price only.\n"
@@ -388,6 +414,7 @@ Support/Resistance:
         except Exception as e:
             logger.warning(f"Could not fetch market analysis: {e}")
             market_summary = f"Current Price: ${current_price:.2f}\n(Market analysis unavailable)"
+            performance_metrics['error'] = str(e)
 
         # Step 3: Build context for AI decision
         click.echo("3. Building decision context...")
@@ -433,7 +460,55 @@ Respond with a JSON object in this format:
 """
 
         # Step 4: Get AI decision
-        if manual:
+        if subagent:
+            click.echo("4. Launching Claude Code subagent for decision...")
+
+            from cli.utils.subagent import get_subagent_communicator
+
+            # Create a prompt for the subagent
+            subagent_prompt = f"""You are a trading decision subagent. Analyze the following trading context and provide a JSON trading decision.
+
+{context}
+
+CRITICAL: You must respond with ONLY a valid JSON object in this exact format (no other text):
+
+{{
+    "action": "buy" | "sell" | "hold",
+    "quantity": <number>,
+    "rationale": "<your reasoning>",
+    "confidence": <0.0 to 1.0>,
+    "stop_loss": <price level, required for buy>
+}}
+
+Examples:
+- Hold: {{"action": "hold", "quantity": 0, "rationale": "Waiting for clearer signal", "confidence": 0.6}}
+- Buy: {{"action": "buy", "quantity": 100, "rationale": "Strong momentum breakout", "confidence": 0.85, "stop_loss": 34500.00}}
+- Sell: {{"action": "sell", "quantity": 100, "rationale": "Taking profits at resistance", "confidence": 0.75}}
+
+Respond with ONLY the JSON object, nothing else."""
+
+            try:
+                start_time = time.time()
+                communicator = get_subagent_communicator()
+                decision = communicator.request_decision(agent_id, subagent_prompt, timeout=60)
+                performance_metrics['llm_decision_ms'] = (time.time() - start_time) * 1000
+
+                click.echo(f"   Decision received: {decision.get('action', 'unknown').upper()}")
+                click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+                click.echo(f"   LLM response time: {performance_metrics['llm_decision_ms']:.1f}ms")
+
+            except TimeoutError as e:
+                click.echo(f"\n✗ Timeout: {e}", err=True)
+                click.echo("No response from Claude Code subagent. Cancelling trade cycle.")
+                return
+            except json.JSONDecodeError as e:
+                click.echo(f"Error: Invalid JSON format: {e}", err=True)
+                return
+            except Exception as e:
+                click.echo(f"Error in subagent mode: {e}", err=True)
+                return
+
+        elif manual:
             click.echo("4. Manual decision required...")
             click.echo("\n" + "="*70)
             click.echo("DECISION CONTEXT FOR CLAUDE CODE")
@@ -528,6 +603,16 @@ Respond with a JSON object in this format:
             click.secho(f"\n✓ {result.get('message')}", fg='green')
         else:
             click.secho(f"\n✗ {result.get('message', 'Trade failed')}", fg='red')
+
+        # Log performance metrics
+        if performance_metrics:
+            total_time = sum(v for k, v in performance_metrics.items() if k.endswith('_ms'))
+            click.echo(f"\nPerformance Metrics:")
+            click.echo(f"  Data fetch: {performance_metrics.get('data_fetch_ms', 0):.1f}ms")
+            click.echo(f"  Technical analysis: {performance_metrics.get('technical_analysis_ms', 0):.1f}ms")
+            click.echo(f"  LLM decision: {performance_metrics.get('llm_decision_ms', 0):.1f}ms")
+            click.echo(f"  Total: {total_time:.1f}ms ({total_time/1000:.2f}s)")
+            logger.info(f"Performance metrics for {agent_id}: {performance_metrics}")
 
     except Exception as e:
         click.echo(f"\nError during trading cycle: {e}", err=True)
