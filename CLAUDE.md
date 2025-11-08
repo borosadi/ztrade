@@ -641,10 +641,10 @@ The initial implementation had daemon threads being killed when the CLI command 
 
 ## Recent Development Sessions
 
-### Session: 2025-11-08 - Multi-Source Sentiment + Performance Tracking + Continuous Loops
+### Session: 2025-11-08 - Multi-Source Sentiment + Performance Tracking + Continuous Loops + Celery Orchestration
 
-**Duration**: ~3 hours
-**Key Accomplishments**: Implemented complete autonomous trading infrastructure
+**Duration**: ~4.5 hours
+**Key Accomplishments**: Implemented complete autonomous trading infrastructure with web monitoring
 
 **Phase 1: Multi-Source Sentiment Analysis**
 - ✅ Created `news_analyzer.py` (289 lines) - Alpaca News API with full article content
@@ -668,24 +668,41 @@ The initial implementation had daemon threads being killed when the CLI command 
 - ✅ Fixed daemon thread lifecycle issue (main process monitoring)
 - ✅ Tested successfully: 2 cycles in 4 seconds with proper state persistence
 
+**Phase 4: Celery + Flower Orchestration (Quick Win!)**
+- ✅ Installed Redis, Celery, Flower (30 minutes setup time)
+- ✅ Created `celery_app.py` (175 lines) - Celery tasks and scheduling
+- ✅ Created `celery_control.sh` (180 lines) - Management script
+- ✅ Created `CELERY_SETUP.md` (380 lines) - Complete documentation
+- ✅ Web UI at http://localhost:5555 (Flower dashboard)
+- ✅ Automatic scheduling: SPY/TSLA every 5min, AAPL every 1hr
+- ✅ Test task: 0.015s execution time
+- ✅ Trading cycle: 9.97s execution (SPY @ $677.58, sentiment 0.635)
+- ✅ Real-time monitoring, task history, automatic retries
+
 **Dependencies Added**:
 - `praw>=7.7.1` - Python Reddit API Wrapper
-- `vaderSentiment>=3.3.2` - Sentiment analysis (already had alpaca-py)
+- `vaderSentiment>=3.3.2` - Sentiment analysis
+- `celery>=5.5.3` - Distributed task queue
+- `flower>=2.0.1` - Web monitoring UI for Celery
+- `redis>=7.0.1` - Message broker and result backend
 
-**Reddit API Credentials Configured**:
+**Credentials Configured**:
 - REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT in `.env`
 
-**Files Created** (10 new files, ~2,000 lines of code):
-1. cli/utils/news_analyzer.py
-2. cli/utils/reddit_analyzer.py
-3. cli/utils/sec_analyzer.py
-4. cli/utils/sentiment_aggregator.py
-5. cli/utils/performance_tracker.py
-6. cli/utils/loop_manager.py
-7. cli/commands/loop.py
-8. oversight/sentiment_performance/trades.jsonl
-9. oversight/sentiment_performance/summary.json
-10. oversight/loop_state/agent_spy.json
+**Files Created** (13 new files, ~2,735 lines of code):
+1. cli/utils/news_analyzer.py (289 lines)
+2. cli/utils/reddit_analyzer.py (285 lines)
+3. cli/utils/sec_analyzer.py (316 lines)
+4. cli/utils/sentiment_aggregator.py (272 lines)
+5. cli/utils/performance_tracker.py (390 lines)
+6. cli/utils/loop_manager.py (390 lines)
+7. cli/commands/loop.py (95 lines)
+8. celery_app.py (175 lines)
+9. celery_control.sh (180 lines)
+10. CELERY_SETUP.md (380 lines)
+11. oversight/sentiment_performance/trades.jsonl
+12. oversight/sentiment_performance/summary.json
+13. oversight/loop_state/agent_spy.json
 
 **Major Bugs Fixed**:
 1. **SEC API 403**: Changed User-Agent from custom to Mozilla/5.0
@@ -699,10 +716,21 @@ The initial implementation had daemon threads being killed when the CLI command 
 - ✅ Continuous loops with 2-3 cycle tests
 - ✅ Market hours detection (after-hours wait behavior)
 - ✅ Graceful shutdown with Ctrl+C
+- ✅ Celery task execution (test: 0.015s, trading: 9.97s)
+- ✅ Flower web UI monitoring
+- ✅ Automatic scheduling with Celery Beat
 
 **Commits**:
 1. "Add multi-source sentiment analysis and performance tracking" (sentiment phase)
 2. "Implement continuous autonomous trading loops with market hours detection" (loops phase)
+3. "Update CLAUDE.md with session summary and ADR-004" (documentation)
+4. "Add Celery + Flower orchestration for trading loops" (orchestration phase)
+
+**Key Decisions Made**:
+- Chose Celery over Airflow/Prefect/Temporal (faster setup, Python-native)
+- Hybrid approach: Keep custom loop manager + add Celery for production
+- Focus on custom trading dashboard vs generic Airflow UI
+- Redis as message broker (lightweight, fast)
 
 ## Development Commands
 
@@ -749,6 +777,14 @@ uv run ztrade risk simulate market_crash
 # Monitoring commands
 uv run ztrade monitor decisions AGENT_ID
 uv run ztrade monitor trades AGENT_ID
+
+# Celery orchestration (production monitoring)
+./celery_control.sh start    # Start all Celery services
+./celery_control.sh status   # Check service status
+./celery_control.sh stop     # Stop all services
+./celery_control.sh logs worker  # View worker logs
+./celery_control.sh test     # Send test task
+# Open Flower web UI: http://localhost:5555
 ```
 
 ### Testing
