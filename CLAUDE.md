@@ -114,12 +114,14 @@ uv run ztrade loop stop agent_spy
 - [ADR-002](docs/adr/ADR-002-multi-source-sentiment.md) - Multi-source sentiment analysis
 - [ADR-003](docs/adr/ADR-003-performance-tracking.md) - Performance tracking system
 - [ADR-004](docs/adr/ADR-004-continuous-trading-loops.md) - Continuous trading loops
+- [ADR-006](docs/adr/ADR-006-containerization-strategy.md) - Docker & Kubernetes containerization
 
 ### 📖 Guides
 - [Development Commands](docs/guides/development-commands.md) - All CLI commands and workflows
 - [Common Tasks](docs/guides/common-tasks.md) - Step-by-step task guides
 - [Configuration](docs/guides/configuration.md) - Complete configuration reference
 - [Dashboard Guide](docs/guides/dashboard-guide.md) - Real-time monitoring dashboard
+- [Docker Deployment](docs/guides/docker-deployment.md) - Containerized deployment guide
 
 ### 🏗️ Architecture
 - [Architecture Overview](docs/architecture/overview.md) - System design and data flow

@@ -1,0 +1,243 @@
+version: '3.8'
+
+# Production Docker Compose configuration
+# Features: Optimized images, resource limits, health checks, restart policies
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ztrade-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ztrade}
+      POSTGRES_USER: ${POSTGRES_USER:-ztrade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ztrade}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Redis message broker
+  redis:
+    image: redis:7-alpine
+    container_name: ztrade-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # Main trading service
+  trading:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ztrade:latest
+    container_name: ztrade-trading
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ztrade}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ztrade}
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    command: tail -f /dev/null
+
+  # Celery worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ztrade:latest
+    container_name: ztrade-worker
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ztrade}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ztrade}
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - CELERY_WORKER_CONCURRENCY=${CELERY_WORKER_CONCURRENCY:-4}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '2.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_app inspect ping"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    command: uv run celery -A celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
+
+  # Celery beat scheduler
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ztrade:latest
+    container_name: ztrade-beat
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ztrade}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ztrade}
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: uv run celery -A celery_app beat --loglevel=info
+
+  # Flower monitoring UI
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ztrade:latest
+    container_name: ztrade-flower
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD required}
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5555/ || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    command: uv run celery -A celery_app flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD}
+
+  # Streamlit dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ztrade:latest
+    container_name: ztrade-dashboard
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ztrade}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ztrade}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ztrade-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8501/_stcore/health || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    command: uv run streamlit run dashboard.py --server.headless=true --server.address=0.0.0.0
+
+volumes:
+  postgres-data:
+    name: ztrade-postgres-data
+  redis-data:
+    name: ztrade-redis-data
+
+networks:
+  ztrade-network:
+    name: ztrade-network
+    driver: bridge

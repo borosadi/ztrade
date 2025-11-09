@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.uv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (keep ADRs and guides but exclude session logs for smaller image)
+docs/sessions/
+
+# Logs
+logs/
+*.log
+/tmp/
+
+# Runtime state
+agents/*/state.json
+oversight/risk_dashboard.json
+celerybeat-schedule*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.tox/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+k8s/
+*.yaml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Misc
+README.md
+LICENSE
+*.md
+!CLAUDE.md
+
+# Backups
+backups/
+*.bak

@@ -1,0 +1,172 @@
+version: '3.8'
+
+# Development Docker Compose configuration
+# Features: Hot-reload, volume mounts, debug logging
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ztrade-postgres-dev
+    environment:
+      POSTGRES_DB: ztrade
+      POSTGRES_USER: ztrade
+      POSTGRES_PASSWORD: ztrade_dev_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ztrade"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ztrade-network
+
+  # Redis message broker
+  redis:
+    image: redis:7-alpine
+    container_name: ztrade-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ztrade-network
+
+  # Main trading service
+  trading:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ztrade-trading-dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://ztrade:ztrade_dev_password@postgres:5432/ztrade
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    volumes:
+      - .:/app  # Hot-reload: mount source code
+      - /app/.venv  # Don't override venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ztrade-network
+    command: tail -f /dev/null  # Keep container running for manual commands
+
+  # Celery worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ztrade-worker-dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://ztrade:ztrade_dev_password@postgres:5432/ztrade
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    volumes:
+      - .:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ztrade-network
+    command: uv run celery -A celery_app worker --loglevel=info
+
+  # Celery beat scheduler
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ztrade-beat-dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://ztrade:ztrade_dev_password@postgres:5432/ztrade
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    volumes:
+      - .:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ztrade-network
+    command: uv run celery -A celery_app beat --loglevel=info
+
+  # Flower monitoring UI
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ztrade-flower-dev
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ztrade-network
+    command: uv run celery -A celery_app flower --port=5555
+
+  # Streamlit dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ztrade-dashboard-dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://ztrade:ztrade_dev_password@postgres:5432/ztrade
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ztrade-network
+    command: uv run streamlit run dashboard.py --server.headless=true
+
+volumes:
+  postgres-data-dev:
+    name: ztrade-postgres-data-dev
+  redis-data-dev:
+    name: ztrade-redis-data-dev
+
+networks:
+  ztrade-network:
+    name: ztrade-network-dev
+    driver: bridge
