@@ -6,6 +6,7 @@ from cli.commands.monitor import monitor
 from cli.commands.risk import risk
 from cli.commands.subagent import subagent
 from cli.commands.loop import loop
+from cli.commands.backtest import backtest
 
 
 @click.group()
@@ -26,6 +27,7 @@ cli.add_command(monitor)
 cli.add_command(risk)
 cli.add_command(subagent)
 cli.add_command(loop)
+cli.add_command(backtest)
 
 
 @cli.command()
