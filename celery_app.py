@@ -112,6 +112,161 @@ def test_task():
     return {'status': 'success', 'message': 'Celery is working!'}
 
 
+@app.task(bind=True, name='ztrade.collect_market_bars', max_retries=3)
+def collect_market_bars(self, symbols: list = None):
+    """
+    Collect and store market bars for tracked symbols.
+
+    Args:
+        symbols: List of symbols to collect (defaults to all tracked symbols)
+
+    Returns:
+        Dict with collection results
+    """
+    try:
+        from cli.utils.database import market_data_store
+        from cli.utils.broker import get_broker
+        from cli.utils.config import get_config
+        from datetime import datetime, timezone
+
+        # Get symbols from config if not provided
+        if not symbols:
+            config = get_config()
+            symbols = [
+                config.load_agent_config(agent_id).get('agent', {}).get('asset')
+                for agent_id in config.list_agents()
+            ]
+            symbols = [s for s in symbols if s]  # Filter None
+
+        if not symbols:
+            logger.warning("No symbols to collect")
+            return {'status': 'skipped', 'reason': 'no_symbols'}
+
+        broker = get_broker()
+        total_bars = 0
+
+        for symbol in symbols:
+            try:
+                # Get 1-minute bars for the last hour
+                bars_1m = broker.get_bars(symbol, '1Min', limit=60)
+
+                if bars_1m:
+                    # Convert to database format
+                    bar_records = []
+                    for bar in bars_1m:
+                        bar_records.append({
+                            'symbol': symbol,
+                            'timestamp': bar.get('timestamp', datetime.now(timezone.utc)),
+                            'timeframe': '1m',
+                            'open': bar.get('open'),
+                            'high': bar.get('high'),
+                            'low': bar.get('low'),
+                            'close': bar.get('close'),
+                            'volume': bar.get('volume'),
+                            'vwap': bar.get('vwap'),
+                            'trade_count': bar.get('trade_count')
+                        })
+
+                    # Store in database
+                    count = market_data_store.insert_bars_bulk(bar_records)
+                    total_bars += count
+                    logger.info(f"Collected {count} bars for {symbol}")
+
+            except Exception as e:
+                logger.error(f"Error collecting bars for {symbol}: {e}")
+                continue
+
+        logger.info(f"Total bars collected: {total_bars}")
+        return {
+            'status': 'success',
+            'symbols': len(symbols),
+            'total_bars': total_bars
+        }
+
+    except Exception as exc:
+        logger.error(f"Error in collect_market_bars: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+
+@app.task(bind=True, name='ztrade.collect_sentiment', max_retries=3)
+def collect_sentiment(self, symbols: list = None):
+    """
+    Collect and store sentiment data for tracked symbols.
+
+    Args:
+        symbols: List of symbols to collect (defaults to all tracked symbols)
+
+    Returns:
+        Dict with collection results
+    """
+    try:
+        from cli.utils.database import sentiment_data_store
+        from cli.utils.sentiment_aggregator import get_sentiment_aggregator
+        from cli.utils.config import get_config
+        from datetime import datetime, timezone
+
+        # Get symbols from config if not provided
+        if not symbols:
+            config = get_config()
+            symbols = [
+                config.load_agent_config(agent_id).get('agent', {}).get('asset')
+                for agent_id in config.list_agents()
+            ]
+            symbols = [s for s in symbols if s]
+
+        if not symbols:
+            logger.warning("No symbols to collect sentiment for")
+            return {'status': 'skipped', 'reason': 'no_symbols'}
+
+        aggregator = get_sentiment_aggregator()
+        total_records = 0
+        timestamp = datetime.now(timezone.utc)
+
+        for symbol in symbols:
+            try:
+                # Get aggregated sentiment (calls all sources)
+                result = aggregator.get_aggregated_sentiment(symbol)
+
+                sentiment_records = []
+
+                # Store individual source sentiments
+                for source_name, source_data in result.get('source_breakdown', {}).items():
+                    if source_data and source_data.get('score') is not None:
+                        sentiment_records.append({
+                            'symbol': symbol,
+                            'timestamp': timestamp,
+                            'source': source_name,
+                            'sentiment': source_data.get('sentiment', 'neutral'),
+                            'score': source_data.get('score', 0.0),
+                            'confidence': source_data.get('confidence', 0.0),
+                            'metadata': {
+                                'article_count': source_data.get('article_count'),
+                                'mention_count': source_data.get('mention_count'),
+                                'filing_count': source_data.get('filing_count')
+                            }
+                        })
+
+                if sentiment_records:
+                    count = sentiment_data_store.insert_sentiments_bulk(sentiment_records)
+                    total_records += count
+                    logger.info(f"Collected {count} sentiment records for {symbol}")
+
+            except Exception as e:
+                logger.error(f"Error collecting sentiment for {symbol}: {e}")
+                continue
+
+        logger.info(f"Total sentiment records collected: {total_records}")
+        return {
+            'status': 'success',
+            'symbols': len(symbols),
+            'total_records': total_records
+        }
+
+    except Exception as exc:
+        logger.error(f"Error in collect_sentiment: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+
 # Celery Beat schedule for periodic tasks
 app.conf.beat_schedule = {
     # Agent SPY - Every 5 minutes during market hours
@@ -148,6 +303,23 @@ app.conf.beat_schedule = {
     'test-task': {
         'task': 'ztrade.test_task',
         'schedule': timedelta(minutes=1),
+    },
+
+    # Data collection tasks
+    'collect-market-bars': {
+        'task': 'ztrade.collect_market_bars',
+        'schedule': timedelta(minutes=5),  # Every 5 minutes
+        'options': {
+            'expires': 240,  # Expire if not executed within 4 minutes
+        }
+    },
+
+    'collect-sentiment-data': {
+        'task': 'ztrade.collect_sentiment',
+        'schedule': timedelta(minutes=15),  # Every 15 minutes
+        'options': {
+            'expires': 840,  # Expire if not executed within 14 minutes
+        }
     },
 }
 

@@ -26,6 +26,7 @@ dependencies = [
     "redis>=7.0.1",
     "streamlit>=1.28.0",
     "plotly>=5.17.0",
+    "psycopg2-binary>=2.9.9",
 ]
 
 [project.optional-dependencies]
