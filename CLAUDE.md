@@ -42,11 +42,13 @@ This file provides quick-reference guidance to Claude Code when working with thi
 - Paper trading execution
 - Celery orchestration with Flower web UI
 
+**✅ Working:**
+- Real-time web dashboard (Streamlit at http://localhost:8501)
+
 **⏳ Pending:**
 - Multi-agent simultaneous trading
 - Advanced sentiment models (FinBERT)
 - Full SEC EDGAR API access
-- Live performance dashboard
 
 ---
 
@@ -67,6 +69,17 @@ uv run ztrade loop start agent_spy
 # Celery orchestration (production)
 ./celery_control.sh start
 # Web UI: http://localhost:5555
+```
+
+### Monitoring Dashboard
+
+```bash
+# Start real-time web dashboard
+./run_dashboard.sh
+# Dashboard: http://localhost:8501
+
+# Or manually
+uv run streamlit run dashboard.py
 ```
 
 ### Common Commands
@@ -106,6 +119,7 @@ uv run ztrade loop stop agent_spy
 - [Development Commands](docs/guides/development-commands.md) - All CLI commands and workflows
 - [Common Tasks](docs/guides/common-tasks.md) - Step-by-step task guides
 - [Configuration](docs/guides/configuration.md) - Complete configuration reference
+- [Dashboard Guide](docs/guides/dashboard-guide.md) - Real-time monitoring dashboard
 
 ### 🏗️ Architecture
 - [Architecture Overview](docs/architecture/overview.md) - System design and data flow
