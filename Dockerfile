@@ -19,9 +19,8 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install uv using pip (more reliable in Docker)
+RUN pip install uv
 
 WORKDIR /app
 
@@ -30,9 +29,13 @@ WORKDIR /app
 # ============================================================================
 FROM base as dependencies
 
-# Copy dependency files
+WORKDIR /app
+
+# Copy dependency files and package metadata
 COPY pyproject.toml ./
 COPY uv.lock* ./
+COPY README.md ./
+COPY cli/ ./cli/
 
 # Install dependencies with uv
 RUN uv sync --frozen

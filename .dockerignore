@@ -67,10 +67,10 @@ k8s/
 .gitlab-ci.yml
 
 # Misc
-README.md
 LICENSE
 *.md
 !CLAUDE.md
+!README.md
 
 # Backups
 backups/
