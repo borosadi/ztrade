@@ -36,6 +36,12 @@ logs/
 agents/*/state.json
 oversight/risk_dashboard.json
 
+# Celery Beat schedule database
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
 # Testing
 .pytest_cache/
 .coverage
