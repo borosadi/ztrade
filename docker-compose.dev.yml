@@ -127,6 +127,7 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
     ports:
       - "5555:5555"
     depends_on:
@@ -134,7 +135,7 @@ services:
         condition: service_healthy
     networks:
       - ztrade-network
-    command: uv run celery -A celery_app flower --port=5555
+    command: uv run celery -A celery_app --broker=redis://redis:6379/0 flower --port=5555
 
   # Streamlit dashboard
   dashboard:

@@ -171,6 +171,7 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
       - FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD required}
     ports:
       - "${FLOWER_PORT:-5555}:5555"
@@ -193,7 +194,7 @@ services:
       interval: 60s
       timeout: 10s
       retries: 3
-    command: uv run celery -A celery_app flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD}
+    command: uv run celery -A celery_app --broker=redis://redis:6379/0 flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD}
 
   # Streamlit dashboard
   dashboard:

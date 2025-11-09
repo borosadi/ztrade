@@ -8,10 +8,12 @@ from cli.utils.logger import get_logger
 logger = get_logger(__name__)
 
 # Initialize Celery app
+# Use environment variable for Redis URL, fallback to localhost for local development
+redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 app = Celery(
     'ztrade',
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
+    broker=redis_url,
+    backend=redis_url
 )
 
 # Celery configuration
