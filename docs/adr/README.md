@@ -19,6 +19,8 @@ An Architecture Decision Record (ADR) captures an important architectural decisi
 | [ADR-002](ADR-002-multi-source-sentiment.md) | Multi-Source Sentiment Analysis Integration | 2025-11-07 | ✅ Implemented |
 | [ADR-003](ADR-003-performance-tracking.md) | Performance Tracking for Sentiment Sources | 2025-11-07 | ✅ Implemented |
 | [ADR-004](ADR-004-continuous-trading-loops.md) | Continuous Autonomous Trading Loops | 2025-11-08 | ✅ Implemented |
+| [ADR-006](ADR-006-containerization-strategy.md) | Docker & Kubernetes Containerization | 2025-11-08 | ✅ Implemented |
+| [ADR-007](ADR-007-data-collection-backtesting.md) | Historical Data Collection & Backtesting | 2025-11-10 | ✅ Implemented |
 
 ## Quick Links
 
@@ -26,6 +28,8 @@ An Architecture Decision Record (ADR) captures an important architectural decisi
 - **Sentiment Analysis**: See [ADR-002](ADR-002-multi-source-sentiment.md) for multi-source sentiment implementation
 - **Performance Metrics**: See [ADR-003](ADR-003-performance-tracking.md) for sentiment tracking system
 - **Continuous Trading**: See [ADR-004](ADR-004-continuous-trading-loops.md) for loop infrastructure
+- **Containerization**: See [ADR-006](ADR-006-containerization-strategy.md) for Docker & Kubernetes setup
+- **Data & Backtesting**: See [ADR-007](ADR-007-data-collection-backtesting.md) for historical data and strategy validation
 
 ## Creating a New ADR
 

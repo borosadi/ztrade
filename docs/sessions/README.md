@@ -6,6 +6,7 @@ This directory contains detailed logs of development sessions, capturing what wa
 
 | Date | Focus | Key Accomplishments |
 |------|-------|---------------------|
+| [2025-11-10](2025-11-10-data-backtesting-docker.md) | Data Collection + Backtesting + Docker | Complete data-driven backtesting pipeline operational in containerized environment (~3 hours, 13 files, ~1,665 lines) |
 | [2025-11-08](2025-11-08-sentiment-loops-celery.md) | Multi-Source Sentiment + Loops + Celery | Implemented complete autonomous trading infrastructure with web monitoring (~4.5 hours, 13 files, ~2,735 lines) |
 
 ## Why Session Logs?
