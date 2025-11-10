@@ -18,14 +18,14 @@ This file provides quick-reference guidance to Claude Code when working with thi
 
 ---
 
-## Current System Status (Updated 2025-11-10)
+## Current System Status (Updated 2025-11-10 PM)
 
 ### Active Trading Agents (3)
 
 | Agent | Asset | Strategy | Timeframe | Risk | Capital | Status |
 |-------|-------|----------|-----------|------|---------|--------|
-| **agent_spy** | SPY | Momentum | 15-min | Moderate (2% SL) | $10,000 | ✅ Tested + Backtested |
-| **agent_tsla** | TSLA | Momentum | 15-min | Aggressive (3% SL) | $10,000 | ✅ Tested |
+| **agent_spy** | SPY | Momentum | 5-min | Moderate (2% SL) | $10,000 | ✅ Backtested |
+| **agent_tsla** | TSLA | Momentum | 5-min | Aggressive (3% SL) | $10,000 | ✅ Backtested (8.51% return) |
 | **agent_aapl** | AAPL | Mean Reversion | 1-hour | Conservative (1.5% SL) | $10,000 | Configured |
 
 ### System Capabilities
@@ -35,22 +35,28 @@ This file provides quick-reference guidance to Claude Code when working with thi
 - Multi-source sentiment analysis (News + Reddit + SEC)
 - Performance tracking for sentiment sources
 - Continuous autonomous trading loops
-- Traditional technical analysis (RSI, SMA, trend, volume)
+- Traditional technical analysis (RSI, SMA, trend, volume, support/resistance)
 - Hybrid decision-making (TA + Sentiment + AI synthesis)
 - Claude Code subagent decisions (file-based, 60s timeout)
 - Risk validation and circuit breakers
 - Paper trading execution
 - Celery orchestration with Flower web UI
 - Real-time web dashboard (Streamlit at http://localhost:8501)
-- **Historical data collection** (PostgreSQL with Celery automation)
-- **Backtesting framework** (event-driven portfolio simulation)
-- **Full Docker containerization** (7 services: postgres, redis, trading, worker, beat, flower, dashboard)
+- Historical data collection (PostgreSQL with 10,735 bars across 3 symbols)
+- **✅ Backtesting framework (FULLY FUNCTIONAL)**
+  - Event-driven portfolio simulation
+  - 100-bar trend analysis (captures 8-hour trends on 5m timeframe)
+  - Directional signal synthesis (ignores neutral noise)
+  - Smart position sizing (handles % and $ configs)
+  - Type-safe calculations (Decimal → float conversions)
+  - TSLA validation: 34 trades, 91.2% win rate, 8.51% return
+- Full Docker containerization (7 services: postgres, redis, trading, worker, beat, flower, dashboard)
 
 **⏳ Pending:**
 - Multi-agent simultaneous trading
 - Advanced sentiment models (FinBERT)
 - Full SEC EDGAR API access
-- Real data collection (waiting for market hours)
+- Strategy optimization and walk-forward testing
 
 ---
 
@@ -103,15 +109,15 @@ uv run ztrade risk correlations
 uv run ztrade loop status
 uv run ztrade loop stop agent_spy
 
-# Backtesting
-uv run ztrade backtest run agent_spy --start 2025-01-01 --end 2025-12-31
+# Backtesting (FULLY FUNCTIONAL ✅)
+uv run ztrade backtest run agent_tsla --start 2025-09-10 --end 2025-11-10
 uv run ztrade backtest list --limit 10
-uv run ztrade backtest show 1 --trades
-uv run ztrade backtest compare 1 2 3
+uv run ztrade backtest show 8 --trades
+uv run ztrade backtest compare 6 7 8
 
-# Database management
+# Database & Data Collection
+python db/backfill_historical_data.py --days 60 --timeframes 5m 15m 1h 1d
 python db/migrate.py                  # Run pending migrations
-python db/seed_test_data.py          # Seed test data for backtesting
 ```
 
 **Full command reference:** [docs/guides/development-commands.md](docs/guides/development-commands.md)
@@ -141,7 +147,8 @@ python db/seed_test_data.py          # Seed test data for backtesting
 
 ### 📝 Development Sessions
 - [Session Index](docs/sessions/README.md) - All development session logs
-- [2025-11-10](docs/sessions/2025-11-10-data-backtesting-docker.md) - Data Collection + Backtesting + Docker (~3hrs, 13 files)
+- [2025-11-10 PM](docs/sessions/2025-11-10-backtest-debugging.md) - Backtest debugging (~2hrs, 2 files)
+- [2025-11-10 AM](docs/sessions/2025-11-10-data-backtesting-docker.md) - Data collection + Docker (~3hrs, 13 files)
 - [2025-11-08](docs/sessions/2025-11-08-sentiment-loops-celery.md) - Sentiment + Loops + Celery (~4.5hrs, 13 files)
 
 ---
@@ -323,18 +330,20 @@ report = tracker.generate_report(lookback_days=30)
 
 ---
 
-## Current Focus (2025-11-10)
+## Current Focus (2025-11-10 PM)
 
-- ✅ **Completed**:
-  - Multi-source sentiment + performance tracking + continuous loops + Celery
-  - Historical data collection service (PostgreSQL + Celery automation)
-  - Complete backtesting framework (event-driven simulation)
-  - Full Docker containerization (7 services operational)
-  - Database migration system
-  - End-to-end integration testing
+- ✅ **Completed Today**:
+  - **AM Session**: Historical data collection + backtesting framework + Docker containerization
+  - **PM Session**: Backtesting system debugging - 4 critical bugs fixed
+    - ✅ Trend analysis: 10 bars → 100 bars lookback
+    - ✅ Type conversions: Decimal → float handling
+    - ✅ Signal synthesis: Ignore neutral signals
+    - ✅ Position sizing: Handle % and $ configs
+  - **Result**: TSLA backtest: 34 trades, 91.2% win rate, 8.51% return ✅
 - 🎯 **Next**:
-  - Collect real market data during trading hours
-  - Run backtests on real historical data
+  - Strategy optimization and parameter tuning
+  - Multi-timeframe analysis (5m + 1h + 1d aggregation)
+  - Walk-forward testing and Monte Carlo simulation
   - Multi-agent simultaneous trading
 - 📊 **Goal**: 3-6 months paper trading validation before any live trading
 
@@ -353,3 +362,4 @@ report = tracker.generate_report(lookback_days=30)
 
 **Last Updated**: 2025-11-10
 **Documentation Version**: 2.1 (Data Collection + Backtesting)
+- Backtest Debugging

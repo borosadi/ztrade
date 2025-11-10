@@ -227,7 +227,9 @@ class Broker:
         self,
         symbol: str,
         timeframe: str = "1day",
-        limit: int = 100
+        limit: int = 100,
+        start: str = None,
+        end: str = None
     ) -> List[Dict[str, Any]]:
         """Get historical price bars from Alpaca.
 
@@ -235,15 +237,27 @@ class Broker:
             symbol: Stock/crypto symbol
             timeframe: Bar timeframe ('1min', '5min', '15min', '1hour', '1day', etc.)
             limit: Number of bars to fetch (max 10000)
+            start: Start date/time (ISO format or datetime object)
+            end: End date/time (ISO format or datetime object)
 
         Returns:
             List of bar dicts with OHLCV data
         """
         try:
+            # Build API call parameters
+            params = {
+                'limit': min(limit, 10000)
+            }
+
+            if start:
+                params['start'] = start
+            if end:
+                params['end'] = end
+
             bars = self.api.get_bars(
                 symbol,
                 timeframe,
-                limit=min(limit, 10000)
+                **params
             )
 
             if not bars or len(bars.df) == 0:

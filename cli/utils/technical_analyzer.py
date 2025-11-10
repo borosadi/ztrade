@@ -332,32 +332,34 @@ class TechnicalAnalyzer:
         if not signals:
             return SignalType.NEUTRAL, 0.0
 
-        # Weighted voting system
+        # Weighted voting system - only count directional signals
+        # Neutral signals are ignored to avoid overwhelming directional signals
         bullish_score = 0.0
         bearish_score = 0.0
-        neutral_score = 0.0
 
         for signal in signals:
-            weight = signal.confidence
             if signal.signal == SignalType.BULLISH:
-                bullish_score += weight
+                bullish_score += signal.confidence
             elif signal.signal == SignalType.BEARISH:
-                bearish_score += weight
-            else:
-                neutral_score += weight
+                bearish_score += signal.confidence
 
-        total_score = bullish_score + bearish_score + neutral_score
+        # If no directional signals, return neutral
+        if bullish_score == 0 and bearish_score == 0:
+            return SignalType.NEUTRAL, 0.5
 
-        if total_score == 0:
-            return SignalType.NEUTRAL, 0.0
+        total_directional = bullish_score + bearish_score
 
-        # Determine overall signal based on highest score
-        if bullish_score > bearish_score and bullish_score > neutral_score:
-            return SignalType.BULLISH, bullish_score / total_score
-        elif bearish_score > bullish_score and bearish_score > neutral_score:
-            return SignalType.BEARISH, bearish_score / total_score
+        # Determine overall signal based on directional scores
+        # Require meaningful difference (>10%) to avoid noise
+        score_diff = abs(bullish_score - bearish_score) / total_directional
+
+        if score_diff < 0.1:  # Less than 10% difference = neutral
+            return SignalType.NEUTRAL, total_directional / len(signals)
+
+        if bullish_score > bearish_score:
+            return SignalType.BULLISH, bullish_score / total_directional
         else:
-            return SignalType.NEUTRAL, neutral_score / total_score
+            return SignalType.BEARISH, bearish_score / total_directional
 
 
 def get_technical_analyzer() -> TechnicalAnalyzer:

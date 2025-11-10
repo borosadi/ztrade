@@ -7,7 +7,7 @@ agent:
 
 strategy:
   type: momentum
-  timeframe: 15m
+  timeframe: 5m
 
 risk:
   max_position_size: 5000.0
