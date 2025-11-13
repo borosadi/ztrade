@@ -23,7 +23,11 @@
 - **CLI**: Click framework
 - **Orchestration**: Celery + Redis + Flower
 - **Broker**: Alpaca API (paper trading via alpaca-py)
-- **Market Data**: Alpaca API (real-time) + Yahoo Finance (fallback)
+- **Market Data**:
+  - Alpaca API (real-time stocks/crypto)
+  - Alpha Vantage (historical stocks - free tier: 25 calls/day)
+  - CoinGecko (hourly crypto - free tier: 30 calls/min)
+  - Yahoo Finance (fallback)
 - **Database**: PostgreSQL
 - **Containers**: Docker + Docker Compose
 
@@ -172,13 +176,17 @@ uv run python db/migrate.py
 
 ### Data Collection
 ```bash
-# Backfill historical data
-uv run python db/backfill_historical_data.py --symbols TSLA IWM BTC/USD \
-    --timeframes 5m 15m 1h --days 60
+# Stocks - Alpha Vantage (free tier: 25 calls/day, 5 calls/min)
+uv run python db/backfill_historical_data.py --symbols TSLA IWM \
+    --timeframes 5m 15m 1h --days 60 --provider alphavantage
 
-# Skip sentiment collection
+# Crypto - CoinGecko (free tier: 30 calls/min, hourly data only)
+uv run python db/backfill_historical_data.py --symbols BTC/USD ETH/USD \
+    --timeframes 1h --days 90 --provider coingecko --no-sentiment
+
+# Stocks - Alpaca (requires paid subscription for historical data)
 uv run python db/backfill_historical_data.py --symbols TSLA --timeframes 5m \
-    --days 30 --no-sentiment
+    --days 30 --provider alpaca --no-sentiment
 ```
 
 ---
@@ -271,10 +279,14 @@ docker-compose up -d
 ### Environment Variables
 Required in `.env`:
 ```bash
-# Alpaca API (required)
+# Alpaca API (required for paper trading)
 ALPACA_API_KEY=your_key
 ALPACA_SECRET_KEY=your_secret
 ALPACA_BASE_URL=https://paper-api.alpaca.markets  # Paper trading only!
+
+# Market Data Providers (at least one required)
+ALPHAVANTAGE_API_KEY=your_key     # Alpha Vantage (stocks - free: 25 calls/day)
+COINGECKO_API_KEY=your_key         # CoinGecko (crypto - free: 30 calls/min)
 
 # Optional
 REDDIT_CLIENT_ID=your_id

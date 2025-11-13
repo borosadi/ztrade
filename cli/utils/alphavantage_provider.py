@@ -299,6 +299,59 @@ class AlphaVantageProvider:
 
         return df
 
+    def get_crypto_daily(
+        self,
+        symbol: str,
+        market: str = 'USD'
+    ) -> pd.DataFrame:
+        """Fetch crypto daily bars.
+
+        Args:
+            symbol: Crypto symbol (e.g., 'BTC', 'ETH')
+            market: Market currency ('USD', 'EUR', etc.)
+
+        Returns:
+            DataFrame with OHLCV data
+
+        Note:
+            This endpoint is available on the FREE tier (unlike crypto intraday).
+            Returns approximately 350+ days of daily data.
+        """
+        logger.info(
+            f"Fetching {symbol}/{market} daily crypto data"
+        )
+
+        params = {
+            'function': 'DIGITAL_CURRENCY_DAILY',
+            'symbol': symbol,
+            'market': market
+        }
+
+        data = self._make_request(params)
+
+        time_series_key = 'Time Series (Digital Currency Daily)'
+        time_series = data.get(time_series_key, {})
+        if not time_series:
+            raise ValueError(f"No daily crypto data in response for {symbol}/{market}")
+
+        rows = []
+        for timestamp_str, values in time_series.items():
+            rows.append({
+                'timestamp': pd.to_datetime(timestamp_str),
+                'open': float(values['1. open']),
+                'high': float(values['2. high']),
+                'low': float(values['3. low']),
+                'close': float(values['4. close']),
+                'volume': float(values['5. volume'])
+            })
+
+        df = pd.DataFrame(rows)
+        df = df.sort_values('timestamp')
+
+        logger.info(f"Fetched {len(df)} daily crypto bars for {symbol}/{market}")
+
+        return df
+
     def get_bars_for_timeframe(
         self,
         symbol: str,
@@ -324,12 +377,10 @@ class AlphaVantageProvider:
             crypto_symbol, market = symbol.split('/')
 
             if timeframe == '1d':
-                # Use daily crypto endpoint (not implemented yet)
-                raise NotImplementedError(
-                    "Daily crypto data not yet implemented. "
-                    "Use '1h' timeframe for now."
-                )
+                # Use daily crypto endpoint (FREE tier)
+                df = self.get_crypto_daily(crypto_symbol, market)
             else:
+                # Intraday crypto data requires PREMIUM subscription
                 df = self.get_crypto_intraday(
                     crypto_symbol,
                     market,

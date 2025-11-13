@@ -37,7 +37,11 @@ This file provides quick-reference guidance to Claude Code when working with thi
 **Key Technologies:**
 - **AI**: Claude Code subagents (no API key required) for trading decisions
 - **Broker**: Alpaca API (paper trading via alpaca-py)
-- **Market Data**: Alpaca API (real-time) + Yahoo Finance (fallback)
+- **Market Data**:
+  - Alpaca API (real-time stocks/crypto)
+  - Alpha Vantage (historical stocks)
+  - CoinGecko (hourly crypto - BTC, ETH, SOL, etc.)
+  - Yahoo Finance (fallback)
 - **Orchestration**: Celery + Redis + Flower
 - **CLI**: Python Click framework
 - **Language**: Python 3.10+
@@ -163,7 +167,13 @@ uv run ztrade backtest show 8 --trades
 uv run ztrade backtest compare 6 7 8
 
 # Database & Data Collection
-python db/backfill_historical_data.py --days 60 --timeframes 5m 15m 1h 1d
+# Stocks (Alpha Vantage)
+python db/backfill_historical_data.py --symbols TSLA IWM --timeframes 5m 15m 1h --days 60 --provider alphavantage
+
+# Crypto (CoinGecko - hourly only on free tier)
+python db/backfill_historical_data.py --symbols BTC/USD ETH/USD --timeframes 1h --days 90 --provider coingecko --no-sentiment
+
+# Database migrations
 python db/migrate.py                  # Run pending migrations
 ```
 
@@ -288,10 +298,14 @@ python db/migrate.py                  # Run pending migrations
 
 Required in `.env`:
 ```bash
-# Alpaca API (required)
+# Alpaca API (required for paper trading)
 ALPACA_API_KEY=your_key
 ALPACA_SECRET_KEY=your_secret
 ALPACA_BASE_URL=https://paper-api.alpaca.markets
+
+# Market Data Providers (at least one required)
+ALPHAVANTAGE_API_KEY=your_key          # Alpha Vantage (stocks - free tier: 25 calls/day)
+COINGECKO_API_KEY=your_key              # CoinGecko (crypto - free tier: 30 calls/min)
 
 # Optional
 ANTHROPIC_API_KEY=your_key              # Only for automated mode

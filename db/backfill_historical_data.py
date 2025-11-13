@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill historical market data from Alpaca API or Alpha Vantage for backtesting."""
+"""Backfill historical market data from Alpaca, Alpha Vantage, or CoinGecko for backtesting."""
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cli.utils.broker import get_broker
 from cli.utils.alphavantage_provider import get_alphavantage_provider
+from cli.utils.coingecko_provider import get_coingecko_provider
 from cli.utils.database import market_data_store, sentiment_data_store
 from cli.utils.sentiment_aggregator import get_sentiment_aggregator
 from cli.utils.logger import get_logger
@@ -85,6 +86,54 @@ def fetch_bars_alphavantage(
         return []
 
 
+def fetch_bars_coingecko(
+    symbol: str,
+    timeframe: str,
+    days_back: int
+) -> List[Dict[str, Any]]:
+    """
+    Fetch bars from CoinGecko (crypto only).
+
+    Args:
+        symbol: Crypto symbol (e.g., 'BTC/USD', 'ETH/USD')
+        timeframe: Timeframe (1h supported on free tier)
+        days_back: Number of days of history (max 90)
+
+    Returns:
+        List of bar dictionaries
+
+    Note:
+        CoinGecko free tier provides hourly price points (not true OHLC candles).
+        O/H/L are approximated from Close prices.
+    """
+    cg_provider = get_coingecko_provider()
+
+    logger.info(f"Fetching {symbol} {timeframe} data from CoinGecko ({days_back} days)")
+
+    try:
+        # CoinGecko returns pandas DataFrame
+        df = cg_provider.get_bars_for_timeframe(symbol, timeframe, days=days_back)
+
+        # Convert to list of dicts
+        bars = []
+        for _, row in df.iterrows():
+            bars.append({
+                'timestamp': row['timestamp'].isoformat(),
+                'open': float(row['open']),
+                'high': float(row['high']),
+                'low': float(row['low']),
+                'close': float(row['close']),
+                'volume': int(row['volume'])
+            })
+
+        logger.info(f"  Fetched {len(bars)} bars from CoinGecko")
+        return bars
+
+    except Exception as e:
+        logger.error(f"CoinGecko fetch failed for {symbol} {timeframe}: {e}")
+        return []
+
+
 def fetch_bars_for_period(
     broker,
     symbol: str,
@@ -102,7 +151,7 @@ def fetch_bars_for_period(
         timeframe: Timeframe
         start_date: Start date
         end_date: End date
-        provider: Data provider ('alpaca' or 'alphavantage')
+        provider: Data provider ('alpaca', 'alphavantage', or 'coingecko')
 
     Returns:
         List of bar dictionaries
@@ -112,6 +161,11 @@ def fetch_bars_for_period(
         # Calculate days_back from date range
         days_back = (end_date - start_date).days
         return fetch_bars_alphavantage(symbol, timeframe, days_back)
+
+    if provider == 'coingecko':
+        # CoinGecko for crypto (hourly data)
+        days_back = (end_date - start_date).days
+        return fetch_bars_coingecko(symbol, timeframe, days_back)
 
     # Alpaca provider (original logic)
     all_bars = []
@@ -368,7 +422,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Backfill historical market data from Alpaca or Alpha Vantage'
+        description='Backfill historical market data from Alpaca, Alpha Vantage, or CoinGecko'
     )
     parser.add_argument(
         '--days',
@@ -389,9 +443,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--provider',
-        choices=['alpaca', 'alphavantage'],
+        choices=['alpaca', 'alphavantage', 'coingecko'],
         default='alpaca',
-        help='Data provider (default: alpaca). Use alphavantage for historical data access.'
+        help='Data provider (default: alpaca). Use alphavantage for stocks, coingecko for crypto.'
     )
     parser.add_argument(
         '--no-sentiment',
@@ -407,6 +461,15 @@ if __name__ == '__main__':
             "⚠️  Alpha Vantage has limited 1-minute data history. "
             "Consider using 5m, 15m, or 1h instead."
         )
+
+    # Note: CoinGecko free tier only supports hourly (1h) data
+    if args.provider == 'coingecko' and args.timeframes:
+        non_hourly = [tf for tf in args.timeframes if tf != '1h']
+        if non_hourly:
+            logger.warning(
+                f"⚠️  CoinGecko free tier only supports 1h (hourly) timeframe. "
+                f"Unsupported timeframes will be skipped: {non_hourly}"
+            )
 
     backfill_data(
         symbols=args.symbols,
