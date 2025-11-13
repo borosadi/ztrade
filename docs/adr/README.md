@@ -22,12 +22,14 @@ An Architecture Decision Record (ADR) captures an important architectural decisi
 | [ADR-006](ADR-006-containerization-strategy.md) | Docker & Kubernetes Containerization | 2025-11-08 | ✅ Implemented |
 | [ADR-007](ADR-007-data-collection-backtesting.md) | Historical Data Collection & Backtesting | 2025-11-10 | ✅ Implemented |
 | [ADR-008](ADR-008-finbert-sentiment-analysis.md) | FinBERT for Financial Sentiment Analysis | 2025-11-13 | ✅ Implemented |
+| [ADR-009](ADR-009-sentiment-driven-asset-selection.md) | Sentiment-Driven Asset Selection Strategy | 2025-11-13 | 📋 Proposed |
 
 ## Quick Links
 
 - **Agent Architecture**: See [ADR-001](ADR-001-asset-based-architecture.md) for why we use asset-based agents
 - **Sentiment Analysis**: See [ADR-002](ADR-002-multi-source-sentiment.md) for multi-source sentiment implementation
 - **FinBERT Integration**: See [ADR-008](ADR-008-finbert-sentiment-analysis.md) for FinBERT sentiment analyzer
+- **Asset Selection**: See [ADR-009](ADR-009-sentiment-driven-asset-selection.md) for trading where sentiment has edge
 - **Performance Metrics**: See [ADR-003](ADR-003-performance-tracking.md) for sentiment tracking system
 - **Continuous Trading**: See [ADR-004](ADR-004-continuous-trading-loops.md) for loop infrastructure
 - **Containerization**: See [ADR-006](ADR-006-containerization-strategy.md) for Docker & Kubernetes setup

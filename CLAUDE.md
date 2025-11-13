@@ -18,15 +18,16 @@ This file provides quick-reference guidance to Claude Code when working with thi
 
 ---
 
-## Current System Status (Updated 2025-11-10 PM)
+## Current System Status (Updated 2025-11-13)
 
-### Active Trading Agents (3)
+### Active Trading Agents (4)
 
-| Agent | Asset | Strategy | Timeframe | Risk | Capital | Status |
-|-------|-------|----------|-----------|------|---------|--------|
-| **agent_spy** | SPY | Momentum | 5-min | Moderate (2% SL) | $10,000 | ✅ Backtested |
-| **agent_tsla** | TSLA | Momentum | 5-min | Aggressive (3% SL) | $10,000 | ✅ Backtested (8.51% return) |
-| **agent_aapl** | AAPL | Mean Reversion | 1-hour | Conservative (1.5% SL) | $10,000 | Configured |
+| Agent | Asset | Strategy | Timeframe | Risk | Capital | Status | Notes |
+|-------|-------|----------|-----------|------|---------|--------|-------|
+| **agent_tsla** | TSLA | Momentum | 5-min | Aggressive (3% SL) | $10,000 | ✅ Validated | 91.2% win rate, 8.51% return |
+| **agent_iwm** | IWM | Sentiment-Momentum | 15-min | Mod-Aggressive (2.5% SL) | $10,000 | 🆕 Ready | Small-cap sentiment edge |
+| **agent_spy** | SPY | Momentum | 5-min | Moderate (2% SL) | $10,000 | ⚠️ Under Review | No sentiment edge (HFT-dominated) |
+| **agent_aapl** | AAPL | Mean Reversion | 1-hour | Conservative (1.5% SL) | $10,000 | ⏸️ Paused | Limited edge (mega-cap) |
 
 ### System Capabilities
 
@@ -57,9 +58,11 @@ This file provides quick-reference guidance to Claude Code when working with thi
   - TSLA validation: 34 trades, 91.2% win rate, 8.51% return
 - Full Docker containerization (7 services: postgres, redis, trading, worker, beat, flower, dashboard)
 
-**⏳ Pending:**
+**📋 Strategic Initiatives:**
+- **IWM Validation**: Backtest IWM vs SPY to prove small-cap sentiment edge (ADR-009)
+- **Crypto Expansion**: Add BTC/ETH agents (24/7 sentiment trading)
+- **Mid-Cap Rotation**: Test rotating between 3-5 mid-caps based on sentiment heat
 - Multi-agent simultaneous trading
-- Full SEC EDGAR API access
 - Strategy optimization and walk-forward testing
 
 ---
@@ -139,6 +142,7 @@ python db/migrate.py                  # Run pending migrations
 - [ADR-006](docs/adr/ADR-006-containerization-strategy.md) - Docker & Kubernetes containerization
 - [ADR-007](docs/adr/ADR-007-data-collection-backtesting.md) - Historical data collection & backtesting
 - [ADR-008](docs/adr/ADR-008-finbert-sentiment-analysis.md) - FinBERT sentiment analysis
+- [ADR-009](docs/adr/ADR-009-sentiment-driven-asset-selection.md) - Sentiment-driven asset selection (small-caps vs large-caps)
 
 ### 📖 Guides
 - [Development Commands](docs/guides/development-commands.md) - All CLI commands and workflows
