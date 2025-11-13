@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Backfill historical market data from Alpaca API for backtesting."""
+"""Backfill historical market data from Alpaca API or Alpha Vantage for backtesting."""
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import yaml
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cli.utils.broker import get_broker
+from cli.utils.alphavantage_provider import get_alphavantage_provider
 from cli.utils.database import market_data_store, sentiment_data_store
 from cli.utils.sentiment_aggregator import get_sentiment_aggregator
 from cli.utils.logger import get_logger
@@ -40,19 +41,79 @@ def discover_symbols() -> List[str]:
     return list(set(symbols))
 
 
+def fetch_bars_alphavantage(
+    symbol: str,
+    timeframe: str,
+    days_back: int
+) -> List[Dict[str, Any]]:
+    """
+    Fetch bars from Alpha Vantage.
+
+    Args:
+        symbol: Symbol to fetch
+        timeframe: Timeframe (5m, 15m, 1h, 1d)
+        days_back: Number of days of history
+
+    Returns:
+        List of bar dictionaries
+    """
+    av_provider = get_alphavantage_provider()
+
+    logger.info(f"Fetching {symbol} {timeframe} data from Alpha Vantage ({days_back} days)")
+
+    try:
+        # Alpha Vantage returns pandas DataFrame
+        df = av_provider.get_bars_for_timeframe(symbol, timeframe, days=days_back)
+
+        # Convert to list of dicts
+        bars = []
+        for _, row in df.iterrows():
+            bars.append({
+                'timestamp': row['timestamp'].isoformat(),
+                'open': float(row['open']),
+                'high': float(row['high']),
+                'low': float(row['low']),
+                'close': float(row['close']),
+                'volume': int(row['volume'])
+            })
+
+        logger.info(f"  Fetched {len(bars)} bars from Alpha Vantage")
+        return bars
+
+    except Exception as e:
+        logger.error(f"Alpha Vantage fetch failed for {symbol} {timeframe}: {e}")
+        return []
+
+
 def fetch_bars_for_period(
     broker,
     symbol: str,
     timeframe: str,
     start_date: datetime,
-    end_date: datetime
+    end_date: datetime,
+    provider: str = 'alpaca'
 ) -> List[Dict[str, Any]]:
     """
     Fetch bars for a date range using pagination.
 
-    Alpaca has a limit of 10,000 bars per request, so we need to paginate
-    for longer time periods.
+    Args:
+        broker: Broker instance (used if provider='alpaca')
+        symbol: Symbol to fetch
+        timeframe: Timeframe
+        start_date: Start date
+        end_date: End date
+        provider: Data provider ('alpaca' or 'alphavantage')
+
+    Returns:
+        List of bar dictionaries
     """
+    if provider == 'alphavantage':
+        # Alpha Vantage doesn't use start/end dates the same way
+        # Calculate days_back from date range
+        days_back = (end_date - start_date).days
+        return fetch_bars_alphavantage(symbol, timeframe, days_back)
+
+    # Alpaca provider (original logic)
     all_bars = []
 
     # Calculate approximate number of bars we'll need
@@ -187,18 +248,22 @@ def backfill_data(
     symbols: List[str] = None,
     days_back: int = 30,
     timeframes: List[str] = None,
-    fetch_sentiment: bool = True
+    fetch_sentiment: bool = True,
+    provider: str = 'alpaca'
 ):
     """
-    Backfill historical data from Alpaca.
+    Backfill historical data from Alpaca or Alpha Vantage.
 
     Args:
         symbols: List of symbols (auto-discovered if None)
         days_back: Number of days to backfill
-        timeframes: List of timeframes to fetch (default: ['1m', '5m', '15m', '1h', '1d'])
+        timeframes: List of timeframes to fetch (default: ['5m', '15m', '1h', '1d'])
         fetch_sentiment: Whether to fetch sentiment data
+        provider: Data provider ('alpaca' or 'alphavantage')
     """
-    broker = get_broker()
+    broker = None
+    if provider == 'alpaca':
+        broker = get_broker()
 
     # Auto-discover symbols if not provided
     if symbols is None:
@@ -219,6 +284,7 @@ def backfill_data(
     logger.info(f"="*60)
     logger.info(f"HISTORICAL DATA BACKFILL")
     logger.info(f"="*60)
+    logger.info(f"Provider: {provider.upper()}")
     logger.info(f"Symbols: {', '.join(symbols)}")
     logger.info(f"Timeframes: {', '.join(timeframes)}")
     logger.info(f"Period: {start_date.date()} to {end_date.date()} ({days_back} days)")
@@ -235,7 +301,7 @@ def backfill_data(
         for timeframe in timeframes:
             try:
                 bars = fetch_bars_for_period(
-                    broker, symbol, timeframe, start_date, end_date
+                    broker, symbol, timeframe, start_date, end_date, provider=provider
                 )
 
                 if not bars:
@@ -302,7 +368,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Backfill historical market data from Alpaca'
+        description='Backfill historical market data from Alpaca or Alpha Vantage'
     )
     parser.add_argument(
         '--days',
@@ -322,6 +388,12 @@ if __name__ == '__main__':
         help='Timeframes to fetch (default: all)'
     )
     parser.add_argument(
+        '--provider',
+        choices=['alpaca', 'alphavantage'],
+        default='alpaca',
+        help='Data provider (default: alpaca). Use alphavantage for historical data access.'
+    )
+    parser.add_argument(
         '--no-sentiment',
         action='store_true',
         help='Skip sentiment data collection'
@@ -329,9 +401,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # Note: Alpha Vantage doesn't support 1m timeframe well (limited history)
+    if args.provider == 'alphavantage' and args.timeframes and '1m' in args.timeframes:
+        logger.warning(
+            "⚠️  Alpha Vantage has limited 1-minute data history. "
+            "Consider using 5m, 15m, or 1h instead."
+        )
+
     backfill_data(
         symbols=args.symbols,
         days_back=args.days,
         timeframes=args.timeframes,
-        fetch_sentiment=not args.no_sentiment
+        fetch_sentiment=not args.no_sentiment,
+        provider=args.provider
     )
