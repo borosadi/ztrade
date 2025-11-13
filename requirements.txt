@@ -8,5 +8,12 @@ requests>=2.31.0
 pandas>=2.0.0
 numpy>=1.24.0
 yfinance==0.2.40
-vaderSentiment>=3.3.2
 praw>=7.7.1
+
+# Sentiment Analysis - FinBERT
+transformers>=4.30.0
+torch>=2.0.0
+sentencepiece>=0.1.99
+
+# Legacy sentiment (kept for fallback/comparison)
+vaderSentiment>=3.3.2

@@ -57,13 +57,16 @@ class RedditAnalyzer:
             self.reddit = None
 
     def _init_sentiment_analyzer(self):
-        """Initialize sentiment analysis (VADER)."""
+        """Initialize sentiment analysis using FinBERT."""
         try:
-            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-            self.sentiment_analyzer = SentimentIntensityAnalyzer()
-            logger.info("VADER sentiment analyzer initialized for Reddit")
-        except ImportError:
-            logger.warning("vaderSentiment not installed. Install with: pip install vaderSentiment")
+            from cli.utils.finbert_analyzer import get_finbert_analyzer
+            self.sentiment_analyzer = get_finbert_analyzer()
+            logger.info("FinBERT sentiment analyzer initialized for Reddit")
+        except ImportError as e:
+            logger.warning(f"FinBERT not available ({e}). Install with: pip install transformers torch")
+            self.sentiment_analyzer = None
+        except Exception as e:
+            logger.error(f"Failed to initialize FinBERT for Reddit: {e}")
             self.sentiment_analyzer = None
 
     def get_reddit_sentiment(

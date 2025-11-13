@@ -33,6 +33,11 @@ This file provides quick-reference guidance to Claude Code when working with thi
 **✅ Working:**
 - Real-time market data (Alpaca API)
 - Multi-source sentiment analysis (News + Reddit + SEC)
+- **✅ FinBERT sentiment analysis**
+  - Domain-specific financial sentiment (ProsusAI/finbert)
+  - VADER-compatible API for drop-in replacement
+  - Batch processing support
+  - GPU acceleration (CUDA/MPS)
 - Performance tracking for sentiment sources
 - Continuous autonomous trading loops
 - Traditional technical analysis (RSI, SMA, trend, volume, support/resistance)
@@ -54,7 +59,6 @@ This file provides quick-reference guidance to Claude Code when working with thi
 
 **⏳ Pending:**
 - Multi-agent simultaneous trading
-- Advanced sentiment models (FinBERT)
 - Full SEC EDGAR API access
 - Strategy optimization and walk-forward testing
 
@@ -134,6 +138,7 @@ python db/migrate.py                  # Run pending migrations
 - [ADR-004](docs/adr/ADR-004-continuous-trading-loops.md) - Continuous trading loops
 - [ADR-006](docs/adr/ADR-006-containerization-strategy.md) - Docker & Kubernetes containerization
 - [ADR-007](docs/adr/ADR-007-data-collection-backtesting.md) - Historical data collection & backtesting
+- [ADR-008](docs/adr/ADR-008-finbert-sentiment-analysis.md) - FinBERT sentiment analysis
 
 ### 📖 Guides
 - [Development Commands](docs/guides/development-commands.md) - All CLI commands and workflows
