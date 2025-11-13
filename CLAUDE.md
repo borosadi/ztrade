@@ -20,14 +20,22 @@ This file provides quick-reference guidance to Claude Code when working with thi
 
 ## Current System Status (Updated 2025-11-13)
 
-### Active Trading Agents (4)
+### Active Trading Agents (3)
 
-| Agent | Asset | Strategy | Timeframe | Risk | Capital | Status | Notes |
-|-------|-------|----------|-----------|------|---------|--------|-------|
-| **agent_tsla** | TSLA | Momentum | 5-min | Aggressive (3% SL) | $10,000 | ✅ Validated | 91.2% win rate, 8.51% return |
-| **agent_iwm** | IWM | Sentiment-Momentum | 15-min | Mod-Aggressive (2.5% SL) | $10,000 | 🆕 Ready | Small-cap sentiment edge |
-| **agent_spy** | SPY | Momentum | 5-min | Moderate (2% SL) | $10,000 | ⚠️ Under Review | No sentiment edge (HFT-dominated) |
-| **agent_aapl** | AAPL | Mean Reversion | 1-hour | Conservative (1.5% SL) | $10,000 | ⏸️ Paused | Limited edge (mega-cap) |
+| Agent | Asset | Strategy | Timeframe | Risk | Capital | Status | Sentiment Alpha |
+|-------|-------|----------|-----------|------|---------|--------|----------------|
+| **agent_tsla** | TSLA | Momentum | 5-min | Aggressive (3% SL) | $10,000 | ✅ Validated | 10-15% (proven: 91.2% win rate) |
+| **agent_iwm** | IWM | Sentiment-Momentum | 15-min | Mod-Aggressive (2.5% SL) | $10,000 | 🆕 Ready | 20-30% (small-cap edge) |
+| **agent_btc** | BTC/USD | Sentiment-Momentum | 1-hour | Aggressive (4% SL) | $10,000 | 🆕 Ready | 40-60% (crypto edge, 24/7) |
+
+### Archived Agents (Removed - No Sentiment Edge)
+
+| Agent | Asset | Archived | Reason |
+|-------|-------|----------|--------|
+| agent_spy | SPY | 2025-11-13 | HFT-dominated, 0% sentiment edge |
+| agent_aapl | AAPL | 2025-11-13 | Mega-cap, limited edge |
+
+**Strategy**: Trade only where sentiment creates exploitable edge. Avoid HFT-dominated markets.
 
 ### System Capabilities
 
@@ -59,10 +67,11 @@ This file provides quick-reference guidance to Claude Code when working with thi
 - Full Docker containerization (7 services: postgres, redis, trading, worker, beat, flower, dashboard)
 
 **📋 Strategic Initiatives:**
-- **IWM Validation**: Backtest IWM vs SPY to prove small-cap sentiment edge (ADR-009)
-- **Crypto Expansion**: Add BTC/ETH agents (24/7 sentiment trading)
+- **IWM Validation**: Backtest IWM to validate 20-30% sentiment alpha hypothesis
+- **BTC Validation**: Backtest BTC to validate 40-60% crypto sentiment edge
+- **ETH Expansion**: Add Ethereum agent (DeFi sentiment, 24/7 trading)
 - **Mid-Cap Rotation**: Test rotating between 3-5 mid-caps based on sentiment heat
-- Multi-agent simultaneous trading
+- Multi-agent simultaneous trading (TSLA + IWM + BTC concurrently)
 - Strategy optimization and walk-forward testing
 
 ---
@@ -72,16 +81,21 @@ This file provides quick-reference guidance to Claude Code when working with thi
 ### Running Agents
 
 ```bash
-# Subagent mode (dry-run, recommended)
-uv run ztrade agent run agent_spy --subagent --dry-run
+# Run TSLA agent (proven winner)
+uv run ztrade agent run agent_tsla --subagent --dry-run
 
-# Subagent mode (paper trading)
-uv run ztrade agent run agent_spy --subagent
+# Run IWM agent (small-cap sentiment edge)
+uv run ztrade agent run agent_iwm --subagent --dry-run
 
-# Start continuous loop (5-min interval)
-uv run ztrade loop start agent_spy
+# Run BTC agent (crypto sentiment edge, 24/7)
+uv run ztrade agent run agent_btc --subagent --dry-run
 
-# Celery orchestration (production)
+# Start continuous loops (production)
+uv run ztrade loop start agent_tsla
+uv run ztrade loop start agent_iwm
+uv run ztrade loop start agent_btc
+
+# Celery orchestration (all agents)
 ./celery_control.sh start
 # Web UI: http://localhost:5555
 ```

@@ -1,0 +1,44 @@
+agent:
+  id: agent_btc
+  name: Bitcoin Sentiment Trader
+  asset: BTC/USD
+  status: active
+  created: '2025-11-13T18:00:00'
+
+strategy:
+  type: sentiment_momentum
+  timeframe: 1h
+  description: >
+    Trade Bitcoin using sentiment-driven momentum strategy. Crypto markets
+    are highly sentiment-driven with 40-60% alpha from news, social media,
+    and on-chain metrics. 1-hour timeframe captures sentiment propagation
+    (30-180 minutes) while filtering short-term noise.
+
+  sentiment_sources:
+    - news (FinBERT on crypto news sites)
+    - reddit (r/Bitcoin, r/CryptoCurrency, r/wallstreetbets)
+    - twitter (crypto influencers, #Bitcoin, #BTC trends)
+    - technical (RSI, SMA, trend, volume, price action)
+
+risk:
+  max_position_size: 5000.0
+  stop_loss: 0.04  # Wider for crypto volatility (4%)
+  take_profit: 0.08  # 2:1 risk-reward
+  max_daily_trades: 3
+  min_confidence: 0.65
+
+personality:
+  risk_tolerance: aggressive
+  description: >
+    Opportunistic crypto trader exploiting sentiment-driven price movements.
+    Bitcoin is extremely sentiment-sensitive: Elon tweets, regulatory news,
+    institutional adoption, and macro trends create exploitable opportunities.
+    24/7 market means weekends and holidays offer unique trading windows.
+
+trading:
+  market_hours: 24/7
+  weekend_trading: true
+  holiday_trading: true
+
+performance:
+  allocated_capital: 10000.0
