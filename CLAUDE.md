@@ -4,6 +4,32 @@ This file provides quick-reference guidance to Claude Code when working with thi
 
 ---
 
+## 🎯 Context Optimization: Persona System
+
+**IMPORTANT**: For most development tasks, **use a specialized persona file instead of this full document** to reduce token usage by 75% and improve focus.
+
+### Quick Selector
+
+| Your Task | Use This Persona |
+|-----------|------------------|
+| CLI/Database/Docker/Celery/Infrastructure | [Core Platform Engineer](.claude/personas/core-platform-engineer.md) |
+| Agents/Strategies/Sentiment/Technical Analysis | [Agent Specialist](.claude/personas/agent-specialist.md) |
+| Dashboard/UI/Charts/Visualization | [Dashboard Developer](.claude/personas/dashboard-developer.md) |
+| Backtesting/Risk/Data Analysis/Performance | [Risk & Data Analyst](.claude/personas/risk-data-analyst.md) |
+| Cross-cutting concerns or initial orientation | This file (CLAUDE.md) |
+
+**📚 Full guide**: [.claude/personas/README.md](.claude/personas/README.md)
+
+**Benefits**:
+- ✅ 75% token reduction (3K vs 15K tokens)
+- ✅ 4x more interactions per session
+- ✅ Focused, relevant context
+- ✅ Faster responses
+
+**When to use this full file**: Initial orientation, cross-cutting architectural changes, strategic decisions affecting multiple systems.
+
+---
+
 ## Project Overview
 
 **Ztrade** is an AI-powered autonomous trading system where multiple AI agents trade different assets independently. Each agent has its own strategy, risk profile, and personality, operating under company-wide risk management and oversight.
@@ -382,6 +408,10 @@ report = tracker.generate_report(lookback_days=30)
 
 ---
 
-**Last Updated**: 2025-11-10
-**Documentation Version**: 2.1 (Data Collection + Backtesting)
-- Backtest Debugging
+**Last Updated**: 2025-11-13
+**Documentation Version**: 3.0 (Persona System + FinBERT + Portfolio Optimization)
+- Persona-based context modularization (75% token reduction)
+- FinBERT sentiment analysis integration
+- Strategic portfolio pivot (TSLA/IWM/BTC)
+- SPY/AAPL archived (validated by backtests)
+- Codebase cleanup (1,116 lines removed)
