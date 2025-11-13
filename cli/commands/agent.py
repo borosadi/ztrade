@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from pathlib import Path
 from cli.utils.config import get_config
-from cli.utils.llm import get_agent_llm
 from cli.utils.broker import get_broker
 from cli.utils.logger import get_logger
 
@@ -243,15 +242,9 @@ def ask(agent_id, question):
 
     click.echo(f"\nAsking {agent_id}: {question}\n")
 
-    try:
-        llm = get_agent_llm()
-        response = llm.ask(
-            prompt=question,
-            system_prompt=f"You are a trading agent. {personality}"
-        )
-        click.echo(f"Response:\n{response}\n")
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
+    click.echo("⚠️  API mode is no longer supported.", err=True)
+    click.echo("The system now uses subagent mode (file-based) for AI decisions.", err=True)
+    click.echo("\nTo get agent insights, use: ztrade agent run {} --subagent --dry-run".format(agent_id), err=True)
 
 
 @agent.command()
@@ -541,45 +534,15 @@ Respond with ONLY the JSON object, nothing else."""
                 click.echo(f"Error: Invalid JSON format: {e}", err=True)
                 return
         else:
-            click.echo("4. Requesting AI decision...")
-
-            # Check if API key is available
-            import os
-            api_key = os.getenv('ANTHROPIC_API_KEY', '')
-            if not api_key or api_key == 'YOUR_API_KEY':
-                click.echo("\n" + "="*70)
-                click.secho("ERROR: No valid ANTHROPIC_API_KEY found!", fg='red', bold=True)
-                click.echo("="*70)
-                click.echo("\nYou have two options:")
-                click.echo("1. Set a valid API key in your .env file")
-                click.echo("2. Use manual mode: ztrade agent run {} --manual".format(agent_id))
-                click.echo("\nManual mode lets you use Claude Code for trading decisions")
-                click.echo("without needing an API key.\n")
-                return
-
-            from cli.utils.llm import get_llm
-            llm = get_llm()
-
-            try:
-                response = llm.ask(context)
-                click.echo(f"   Raw response length: {len(response)} characters")
-
-                # Try to parse JSON from response
-                json_match = re.search(r'\{[^{}]*"action"[^{}]*\}', response, re.DOTALL)
-
-                if json_match:
-                    decision = json.loads(json_match.group())
-                else:
-                    click.echo(f"Could not parse decision from AI response", err=True)
-                    click.echo(f"Response: {response[:200]}...")
-                    return
-
-                click.echo(f"   Decision: {decision.get('action', 'unknown').upper()}")
-                click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
-
-            except Exception as e:
-                click.echo(f"Error getting AI decision: {e}", err=True)
-                return
+            # API mode is no longer supported
+            click.echo("\n" + "="*70)
+            click.secho("ERROR: API mode is no longer supported!", fg='red', bold=True)
+            click.echo("="*70)
+            click.echo("\nPlease use one of the supported modes:")
+            click.echo("1. Subagent mode: ztrade agent run {} --subagent".format(agent_id))
+            click.echo("2. Manual mode: ztrade agent run {} --manual".format(agent_id))
+            click.echo("\nSubagent mode is RECOMMENDED for automated trading.\n")
+            return
 
         # Step 5: Validate against risk rules
         click.echo("5. Validating against risk rules...")

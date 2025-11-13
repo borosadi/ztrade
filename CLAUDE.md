@@ -320,7 +320,6 @@ Ztrade/
 
 - **Project README**: [README.md](README.md) - Getting started guide
 - **Trading Plan**: [trading_company_plan.md](trading_company_plan.md) - Complete system design
-- **Gemini Notes**: [GEMINI.md](GEMINI.md) - Alternative AI integration notes
 - **Celery Setup**: [CELERY_SETUP.md](CELERY_SETUP.md) - Celery orchestration guide
 
 ---
