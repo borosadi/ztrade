@@ -19,7 +19,7 @@ risk:
   stop_loss: 0.025  # Slightly wider due to small-cap volatility
   take_profit: 0.05
   max_daily_trades: 4
-  min_confidence: 0.65
+  min_confidence: 0.58  # Optimized from 0.65 to capture more small-cap opportunities
 
 personality:
   risk_tolerance: moderate_aggressive

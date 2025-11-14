@@ -14,9 +14,12 @@ logger = get_logger(__name__)
 
 @dataclass
 class BacktestPosition:
-    """Represents a simulated position in backtesting."""
+    """Represents a simulated position in backtesting.
+
+    Supports fractional quantities for crypto assets (e.g., 0.05 BTC).
+    """
     symbol: str
-    quantity: int
+    quantity: float  # Changed from int to support fractional shares
     entry_price: float
     entry_time: datetime
     current_price: float = 0.0
@@ -70,13 +73,13 @@ class BacktestPortfolio:
             return 0.0
         return (self.total_value - self.initial_capital) / self.initial_capital * 100
 
-    def can_buy(self, price: float, quantity: int) -> bool:
+    def can_buy(self, price: float, quantity: float) -> bool:
         """Check if portfolio has enough cash for purchase."""
         cost = price * quantity
         return self.cash >= cost
 
-    def buy(self, symbol: str, price: float, quantity: int, timestamp: datetime) -> bool:
-        """Execute buy order."""
+    def buy(self, symbol: str, price: float, quantity: float, timestamp: datetime) -> bool:
+        """Execute buy order (supports fractional shares for crypto)."""
         cost = price * quantity
 
         if not self.can_buy(price, quantity):
@@ -116,11 +119,13 @@ class BacktestPortfolio:
             'portfolio_value': self.total_value
         })
 
-        logger.info(f"BUY: {quantity} {symbol} @ ${price:.2f} (cost: ${cost:.2f}, cash: ${self.cash:.2f})")
+        # Format quantity display (show decimals for fractional, integer for whole)
+        qty_display = f"{quantity:.8f}".rstrip('0').rstrip('.') if quantity < 1 else f"{quantity:.2f}".rstrip('0').rstrip('.')
+        logger.info(f"BUY: {qty_display} {symbol} @ ${price:.2f} (cost: ${cost:.2f}, cash: ${self.cash:.2f})")
         return True
 
-    def sell(self, symbol: str, price: float, quantity: int, timestamp: datetime) -> bool:
-        """Execute sell order."""
+    def sell(self, symbol: str, price: float, quantity: float, timestamp: datetime) -> bool:
+        """Execute sell order (supports fractional shares for crypto)."""
         if symbol not in self.positions:
             logger.warning(f"Cannot sell {symbol}: no position")
             return False
@@ -160,7 +165,9 @@ class BacktestPortfolio:
             'portfolio_value': self.total_value
         })
 
-        logger.info(f"SELL: {quantity} {symbol} @ ${price:.2f} (P&L: ${pnl:.2f}, cash: ${self.cash:.2f})")
+        # Format quantity display (show decimals for fractional, integer for whole)
+        qty_display = f"{quantity:.8f}".rstrip('0').rstrip('.') if quantity < 1 else f"{quantity:.2f}".rstrip('0').rstrip('.')
+        logger.info(f"SELL: {qty_display} {symbol} @ ${price:.2f} (P&L: ${pnl:.2f}, cash: ${self.cash:.2f})")
         return True
 
     def update_prices(self, prices: Dict[str, float], timestamp: datetime):
@@ -288,8 +295,11 @@ class BacktestEngine:
         logger.info(f"Loaded sentiment for {len(sentiment_by_time)} timestamps")
         return sentiment_by_time
 
-    def calculate_position_size(self, price: float) -> int:
-        """Calculate position size based on risk management rules."""
+    def calculate_position_size(self, price: float) -> float:
+        """Calculate position size based on risk management rules.
+
+        Supports fractional shares for crypto assets (e.g., 0.05 BTC).
+        """
         max_position_config = self.agent_config.get('risk', {}).get('max_position_size', 0.05)
 
         # Check if config is percentage (<=1) or absolute dollars (>1)
@@ -298,15 +308,26 @@ class BacktestEngine:
         else:
             max_position_value = max_position_config
 
-        quantity = int(max_position_value / price)
-        return max(1, quantity)  # At least 1 share
+        quantity = max_position_value / price
 
-    def should_trade(self, signal: TechnicalAnalysis, current_position: int) -> Tuple[str, int]:
+        # For crypto (detected by '/' in symbol like 'BTC/USD'), allow fractional shares
+        # For stocks, round to integers
+        is_crypto = '/' in self.symbol
+
+        if is_crypto:
+            # Round to 8 decimal places for crypto (standard precision)
+            return round(quantity, 8)
+        else:
+            # Stocks: use integer shares, minimum 1
+            return max(1.0, float(int(quantity)))
+
+    def should_trade(self, signal: TechnicalAnalysis, current_position: float) -> Tuple[str, float]:
         """
         Determine if a trade should be made based on signal and current position.
 
         Returns:
             Tuple of (action, quantity) where action is 'buy', 'sell', or 'hold'
+            Quantity is float to support fractional shares for crypto.
         """
         # Get min confidence from agent config
         min_confidence = self.agent_config.get('risk', {}).get('min_confidence', 0.6)
