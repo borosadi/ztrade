@@ -1,0 +1,9 @@
+{
+  "agent_id": "agent_btc",
+  "status": "running",
+  "cycles_completed": 56,
+  "started_at": "2025-11-15T19:31:16.717047",
+  "last_cycle_at": "2025-11-16T00:07:22.164138",
+  "last_error": null,
+  "interval_seconds": 300
+}

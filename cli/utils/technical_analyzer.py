@@ -15,6 +15,9 @@ from cli.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Flag to enable improved analyzer with regime detection
+USE_IMPROVED_ANALYZER = True  # Set to False to use baseline analyzer
+
 
 class SignalType(Enum):
     """Types of technical signals."""
@@ -72,15 +75,111 @@ class TechnicalAnalyzer:
     All calculations are transparent and auditable.
     """
 
-    def analyze(self, market_context: Dict[str, Any]) -> TechnicalAnalysis:
+    def _analyze_improved(self, market_context: Dict[str, Any]) -> TechnicalAnalysis:
         """
-        Analyze market context and generate technical signals.
+        Analyze using improved analyzer with regime detection.
 
         Args:
             market_context: Output from MarketDataProvider.get_market_context()
 
         Returns:
-            TechnicalAnalysis with structured signals and overall assessment
+            TechnicalAnalysis with improved signal logic
+        """
+        from cli.utils.improved_technical_analyzer import analyze_improved
+
+        start_time = time.time()
+
+        symbol = market_context.get("symbol", "UNKNOWN")
+        timestamp = market_context.get("timestamp", "")
+        bars = market_context.get("bars", [])
+
+        if len(bars) < 100:
+            logger.warning(f"Insufficient bars ({len(bars)}) for improved analysis")
+            # Fall back to baseline analyzer
+            return self._analyze_baseline(market_context)
+
+        # Extract raw price arrays from bars
+        closes = [float(b['close']) for b in bars]
+        highs = [float(b['high']) for b in bars]
+        lows = [float(b['low']) for b in bars]
+        volumes = [float(b['volume']) for b in bars]
+
+        # Call improved analyzer
+        result = analyze_improved(symbol, closes, highs, lows, volumes)
+
+        # Convert to TechnicalAnalysis format
+        signal_map = {
+            'buy': SignalType.BULLISH,
+            'sell': SignalType.BEARISH,
+            'neutral': SignalType.NEUTRAL
+        }
+
+        overall_signal = signal_map.get(result['signal'], SignalType.NEUTRAL)
+        overall_confidence = result['confidence']
+
+        # Create detailed signals from improved analyzer results
+        signals = [
+            TechnicalSignal(
+                indicator="improved_analyzer",
+                signal=overall_signal,
+                confidence=overall_confidence,
+                value=None,
+                reasoning=result.get('reason', 'No reason provided')
+            )
+        ]
+
+        # Add regime information as a signal
+        if 'regime' in result:
+            signals.append(
+                TechnicalSignal(
+                    indicator="market_regime",
+                    signal=SignalType.NEUTRAL,
+                    confidence=result.get('regime_strength', 0.0),
+                    value=None,
+                    reasoning=f"Regime: {result['regime']}, Trend: {result.get('trend', 'unknown')}"
+                )
+            )
+
+        # Add volatility information
+        if 'volatility_pct' in result:
+            signals.append(
+                TechnicalSignal(
+                    indicator="volatility",
+                    signal=SignalType.NEUTRAL,
+                    confidence=result.get('vol_multiplier', 1.0),
+                    value=result['volatility_pct'],
+                    reasoning=f"Volatility: {result['volatility_pct']:.2f}%, Position multiplier: {result.get('vol_multiplier', 1.0):.2f}"
+                )
+            )
+
+        computation_time_ms = (time.time() - start_time) * 1000
+
+        analysis = TechnicalAnalysis(
+            symbol=symbol,
+            timestamp=timestamp,
+            signals=signals,
+            overall_signal=overall_signal,
+            overall_confidence=overall_confidence,
+            computation_time_ms=computation_time_ms
+        )
+
+        logger.info(
+            f"[IMPROVED] Technical analysis for {symbol}: {overall_signal.value} "
+            f"(confidence: {overall_confidence:.2f}, regime: {result.get('regime', 'unknown')}) "
+            f"in {computation_time_ms:.1f}ms"
+        )
+
+        return analysis
+
+    def _analyze_baseline(self, market_context: Dict[str, Any]) -> TechnicalAnalysis:
+        """
+        Baseline technical analysis (original implementation).
+
+        Args:
+            market_context: Output from MarketDataProvider.get_market_context()
+
+        Returns:
+            TechnicalAnalysis with baseline signal logic
         """
         start_time = time.time()
 
@@ -138,11 +237,29 @@ class TechnicalAnalyzer:
         )
 
         logger.info(
-            f"Technical analysis for {symbol}: {overall_signal.value} "
+            f"[BASELINE] Technical analysis for {symbol}: {overall_signal.value} "
             f"(confidence: {overall_confidence:.2f}) in {computation_time_ms:.1f}ms"
         )
 
         return analysis
+
+    def analyze(self, market_context: Dict[str, Any]) -> TechnicalAnalysis:
+        """
+        Analyze market context and generate technical signals.
+
+        Routes to either improved analyzer (with regime detection) or baseline analyzer
+        based on USE_IMPROVED_ANALYZER flag.
+
+        Args:
+            market_context: Output from MarketDataProvider.get_market_context()
+
+        Returns:
+            TechnicalAnalysis with structured signals and overall assessment
+        """
+        if USE_IMPROVED_ANALYZER:
+            return self._analyze_improved(market_context)
+        else:
+            return self._analyze_baseline(market_context)
 
     def _analyze_rsi(self, rsi: float) -> TechnicalSignal:
         """Analyze RSI and return signal."""

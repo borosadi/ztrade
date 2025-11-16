@@ -1,6 +1,6 @@
 {
   "agent_id": "agent_spy",
-  "status": "running",
+  "status": "stopped",
   "cycles_completed": 1,
   "started_at": "2025-11-07T22:56:26.646230",
   "last_cycle_at": "2025-11-07T22:56:26.646415",
