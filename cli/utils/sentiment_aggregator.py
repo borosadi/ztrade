@@ -64,7 +64,7 @@ class SentimentAggregator:
         Get aggregated sentiment from all enabled sources.
 
         Args:
-            symbol: Stock symbol (e.g., 'SPY', 'TSLA')
+            symbol: Stock symbol (e.g., 'TSLA', 'IWM') or crypto (e.g., 'BTC/USD')
             news_lookback_hours: Hours to look back for news
             reddit_lookback_hours: Hours to look back for Reddit
             sec_lookback_days: Days to look back for SEC filings

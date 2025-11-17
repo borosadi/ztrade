@@ -60,7 +60,7 @@ def list(verbose):
 
 @agent.command()
 @click.argument('agent_id')
-@click.option('--asset', prompt='Asset symbol', help='Asset to trade (e.g., BTC/USD, SPY)')
+@click.option('--asset', prompt='Asset symbol', help='Asset to trade (e.g., TSLA, IWM, BTC/USD)')
 @click.option('--name', prompt='Agent name', help='Descriptive name for the agent')
 @click.option('--strategy', type=click.Choice(['momentum', 'mean_reversion', 'breakout']),
               prompt='Strategy type', help='Trading strategy')
@@ -252,7 +252,8 @@ def ask(agent_id, question):
 @click.option('--dry-run', is_flag=True, help='Simulate without executing trades')
 @click.option('--manual', is_flag=True, help='Manual mode: use Claude Code for decisions instead of API')
 @click.option('--subagent', is_flag=True, help='Subagent mode: automatically use Claude Code subagent for decisions')
-def run(agent_id, dry_run, manual, subagent):
+@click.option('--automated', is_flag=True, help='Automated mode: use Anthropic API for autonomous decisions')
+def run(agent_id, dry_run, manual, subagent, automated):
     """Runs an agent's trading cycle."""
     from cli.utils.broker import get_broker
     from cli.utils.risk import RiskValidator
@@ -282,10 +283,13 @@ def run(agent_id, dry_run, manual, subagent):
     if subagent:
         click.echo(f"\n🤖 SUBAGENT MODE - Automatically using Claude Code subagent for decisions\n")
 
+    if automated:
+        click.echo(f"\n🤖 AUTOMATED MODE - Using Anthropic API for autonomous decisions\n")
+
     click.echo(f"Running trading cycle for {agent_id} ({asset})...")
 
     # Check if agent is active
-    if status != 'active' and not dry_run and not manual and not subagent:
+    if status != 'active' and not dry_run and not manual and not subagent and not automated:
         click.echo(f"Agent is {status}, not active. Skipping.", err=True)
         return
 
@@ -533,15 +537,50 @@ Respond with ONLY the JSON object, nothing else."""
             except json.JSONDecodeError as e:
                 click.echo(f"Error: Invalid JSON format: {e}", err=True)
                 return
+
+        elif automated:
+            click.echo("4. Requesting decision from Anthropic API...")
+
+            from cli.utils.automated_decision import get_automated_decision_maker
+
+            try:
+                start_time = time.time()
+                decision_maker = get_automated_decision_maker()
+
+                if not decision_maker.is_available():
+                    click.echo("\n" + "="*70, err=True)
+                    click.secho("ERROR: Anthropic API not configured!", fg='red', bold=True)
+                    click.echo("="*70, err=True)
+                    click.echo("\nTo use automated mode:", err=True)
+                    click.echo("1. Install the Anthropic SDK: uv pip install anthropic", err=True)
+                    click.echo("2. Add to .env: ANTHROPIC_API_KEY=your_api_key", err=True)
+                    click.echo("3. Get your API key at: https://console.anthropic.com/", err=True)
+                    click.echo("\nAlternatively, use subagent mode within Claude Code terminal.\n", err=True)
+                    return
+
+                decision = decision_maker.make_decision(context, timeout=30)
+                performance_metrics['llm_decision_ms'] = (time.time() - start_time) * 1000
+
+                click.echo(f"   Decision received: {decision.get('action', 'unknown').upper()}")
+                click.echo(f"   Confidence: {decision.get('confidence', 0)*100:.0f}%")
+                click.echo(f"   API response time: {performance_metrics['llm_decision_ms']:.1f}ms")
+
+            except Exception as e:
+                click.echo(f"\n✗ Automated decision failed: {e}", err=True)
+                logger.error(f"Automated decision error: {e}", exc_info=True)
+                return
+
         else:
-            # API mode is no longer supported
+            # No decision mode specified
             click.echo("\n" + "="*70)
-            click.secho("ERROR: API mode is no longer supported!", fg='red', bold=True)
+            click.secho("ERROR: No decision mode specified!", fg='red', bold=True)
             click.echo("="*70)
             click.echo("\nPlease use one of the supported modes:")
-            click.echo("1. Subagent mode: ztrade agent run {} --subagent".format(agent_id))
-            click.echo("2. Manual mode: ztrade agent run {} --manual".format(agent_id))
-            click.echo("\nSubagent mode is RECOMMENDED for automated trading.\n")
+            click.echo("1. Automated mode: ztrade agent run {} --automated (requires ANTHROPIC_API_KEY)".format(agent_id))
+            click.echo("2. Subagent mode: ztrade agent run {} --subagent (within Claude Code terminal)".format(agent_id))
+            click.echo("3. Manual mode: ztrade agent run {} --manual (interactive)".format(agent_id))
+            click.echo("\nAutomated mode is RECOMMENDED for background/production trading.")
+            click.echo("Subagent mode is RECOMMENDED for development/testing.\n")
             return
 
         # Step 5: Validate against risk rules

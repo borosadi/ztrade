@@ -269,33 +269,33 @@ def collect_sentiment(self, symbols: list = None):
 
 # Celery Beat schedule for periodic tasks
 app.conf.beat_schedule = {
-    # Agent SPY - Every 5 minutes during market hours
-    'agent-spy-trading-cycle': {
+    # Agent TSLA - Every 5 minutes during market hours
+    'agent-tsla-trading-cycle': {
         'task': 'ztrade.trading_cycle',
         'schedule': timedelta(minutes=5),
-        'args': ('agent_spy', True, True),  # dry_run=True, manual=True
+        'args': ('agent_tsla', True, True),  # dry_run=True, manual=True
         'options': {
             'expires': 240,  # Expire if not executed within 4 minutes
         }
     },
 
-    # Agent TSLA - Every 5 minutes during market hours
-    'agent-tsla-trading-cycle': {
+    # Agent IWM - Every 15 minutes during market hours
+    'agent-iwm-trading-cycle': {
         'task': 'ztrade.trading_cycle',
-        'schedule': timedelta(minutes=5),
-        'args': ('agent_tsla', True, True),
+        'schedule': timedelta(minutes=15),
+        'args': ('agent_iwm', True, True),
         'options': {
-            'expires': 240,
+            'expires': 840,  # Expire if not executed within 14 minutes
         }
     },
 
-    # Agent AAPL - Every 1 hour during market hours
-    'agent-aapl-trading-cycle': {
+    # Agent BTC - Every 1 hour (24/7 crypto trading)
+    'agent-btc-trading-cycle': {
         'task': 'ztrade.trading_cycle',
         'schedule': timedelta(hours=1),
-        'args': ('agent_aapl', True, True),
+        'args': ('agent_btc', True, True),
         'options': {
-            'expires': 3300,  # 55 minutes
+            'expires': 3300,  # Expire if not executed within 55 minutes
         }
     },
 

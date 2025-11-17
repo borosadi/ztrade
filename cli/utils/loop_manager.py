@@ -116,6 +116,7 @@ class LoopManager:
         dry_run: bool = False,
         manual: bool = False,
         subagent: bool = False,
+        automated: bool = False,
         market_hours_only: bool = True,
         cycle_func: Optional[Callable] = None
     ) -> bool:
@@ -129,6 +130,7 @@ class LoopManager:
             dry_run: Run without executing trades
             manual: Use manual mode
             subagent: Use subagent mode
+            automated: Use automated mode (Anthropic API)
             market_hours_only: Only trade during market hours
             cycle_func: Function to call for each cycle
 

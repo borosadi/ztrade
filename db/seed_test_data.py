@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 def generate_sample_bars(symbol: str, days: int = 30) -> list:
     """Generate sample OHLCV bars for testing."""
     bars = []
-    base_price = {'SPY': 450.0, 'TSLA': 250.0, 'AAPL': 180.0}.get(symbol, 100.0)
+    base_price = {'TSLA': 250.0, 'IWM': 200.0, 'BTC/USD': 45000.0}.get(symbol, 100.0)
 
     # Generate daily bars
     current_date = datetime.now(timezone.utc) - timedelta(days=days)
@@ -115,7 +115,7 @@ def generate_sample_sentiment(symbol: str, days: int = 30) -> list:
 
 def seed_data():
     """Seed the database with test data."""
-    symbols = ['SPY', 'TSLA', 'AAPL']
+    symbols = ['TSLA', 'IWM', 'BTC/USD']
     days = 60  # 60 days of data
 
     logger.info(f"Seeding test data for {len(symbols)} symbols over {days} days...")
@@ -142,7 +142,7 @@ def seed_data():
     logger.info(f"   Total bars: {total_bars}")
     logger.info(f"   Total sentiment records: {total_sentiment}")
     logger.info(f"\nYou can now run backtests with:")
-    logger.info(f"  uv run ztrade backtest run agent_spy --start 2025-09-10 --end 2025-11-10")
+    logger.info(f"  uv run ztrade backtest run agent_tsla --start 2025-09-10 --end 2025-11-10")
 
 
 if __name__ == '__main__':

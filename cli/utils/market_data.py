@@ -24,7 +24,7 @@ class MarketDataProvider:
         Get comprehensive market context for a symbol.
 
         Args:
-            symbol: Asset symbol (e.g., 'BTC', 'SPY', 'AAPL')
+            symbol: Asset symbol (e.g., 'TSLA', 'IWM', 'BTC/USD')
             timeframe: Time interval (5m, 15m, 1h, 4h, daily)
             lookback_periods: Number of historical periods to analyze
 

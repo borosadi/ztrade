@@ -76,7 +76,7 @@ def test_agent_create_and_list():
         result = runner.invoke(
             cli,
             ["agent", "create", "test_agent"],
-            input="SPY\nTest Agent\nmomentum\naggressive\n"
+            input="TSLA\nTest Agent\nmomentum\naggressive\n"
         )
 
         # Check if create was successful

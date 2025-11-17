@@ -80,7 +80,7 @@ class RedditAnalyzer:
         Analyze Reddit sentiment for a trading symbol.
 
         Args:
-            symbol: Stock symbol (e.g., 'SPY', 'TSLA', 'AAPL')
+            symbol: Stock symbol (e.g., 'TSLA', 'IWM') or crypto (e.g., 'BTC/USD')
             lookback_hours: How many hours back to search
             max_posts: Maximum number of posts to analyze per subreddit
             subreddits: List of subreddits to search (default: wallstreetbets, stocks, investing)

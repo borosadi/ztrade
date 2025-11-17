@@ -72,7 +72,7 @@ class SECAnalyzer:
         Analyze SEC filings sentiment for a trading symbol.
 
         Args:
-            symbol: Stock symbol (e.g., 'TSLA', 'AAPL')
+            symbol: Stock symbol (e.g., 'TSLA', 'IWM')
             lookback_days: How many days back to search
             max_filings: Maximum number of filings to analyze
 

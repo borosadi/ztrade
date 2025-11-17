@@ -20,9 +20,10 @@ def loop():
 @click.option('--max-cycles', type=int, default=None, help='Maximum cycles before stopping')
 @click.option('--dry-run', is_flag=True, help='Run without executing trades')
 @click.option('--manual', is_flag=True, help='Use manual mode')
-@click.option('--subagent', is_flag=True, help='Use subagent mode')
+@click.option('--subagent', is_flag=True, help='Use subagent mode (requires Claude Code terminal)')
+@click.option('--automated', is_flag=True, help='Use automated mode (Anthropic API, recommended for background)')
 @click.option('--market-hours/--no-market-hours', default=True, help='Only trade during market hours (default: on)')
-def start(agent_id, interval, max_cycles, dry_run, manual, subagent, market_hours):
+def start(agent_id, interval, max_cycles, dry_run, manual, subagent, automated, market_hours):
     """Start a continuous trading loop for an agent."""
     config = get_config()
 
@@ -40,9 +41,29 @@ def start(agent_id, interval, max_cycles, dry_run, manual, subagent, market_hour
         try:
             logger.info(f"Cycle started for {agent_id_param} ({asset})")
 
-            # Simple test: just log that we ran
-            # TODO: Add market data fetch, analysis, and trading decision
-            logger.info(f"Cycle executed for {agent_id_param}")
+            # Call the agent run command programmatically
+            from cli.commands.agent import run as agent_run_impl
+            from click.testing import CliRunner
+
+            runner = CliRunner()
+            cmd_args = [agent_id_param]
+
+            if dry_run:
+                cmd_args.append('--dry-run')
+            if manual:
+                cmd_args.append('--manual')
+            if subagent:
+                cmd_args.append('--subagent')
+            if automated:
+                cmd_args.append('--automated')
+
+            # Run the agent cycle
+            result = runner.invoke(agent_run_impl, cmd_args, catch_exceptions=False)
+
+            if result.exit_code == 0:
+                logger.info(f"Cycle completed successfully for {agent_id_param}")
+            else:
+                logger.error(f"Cycle failed for {agent_id_param}: {result.output}")
 
         except Exception as e:
             logger.error(f"Error in trading cycle for {agent_id_param}: {e}", exc_info=True)
@@ -56,6 +77,7 @@ def start(agent_id, interval, max_cycles, dry_run, manual, subagent, market_hour
         dry_run=dry_run,
         manual=manual,
         subagent=subagent,
+        automated=automated,
         market_hours_only=market_hours,
         cycle_func=run_cycle
     )

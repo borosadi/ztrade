@@ -38,7 +38,7 @@ class NewsAnalyzer:
         Fetch recent news and analyze sentiment for a symbol.
 
         Args:
-            symbol: Stock symbol (e.g., 'SPY', 'TSLA', 'AAPL')
+            symbol: Stock symbol (e.g., 'TSLA', 'IWM') or crypto (e.g., 'BTC/USD')
             lookback_hours: How many hours back to fetch news
             max_articles: Maximum number of articles to analyze
 
