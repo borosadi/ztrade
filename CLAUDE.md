@@ -35,7 +35,7 @@ This file provides quick-reference guidance to Claude Code when working with thi
 **Ztrade** is an AI-powered autonomous trading system where multiple AI agents trade different assets independently. Each agent has its own strategy, risk profile, and personality, operating under company-wide risk management and oversight.
 
 **Key Technologies:**
-- **AI**: Claude Code subagents (no API key required) for trading decisions
+- **AI**: Three decision modes - Automated (Anthropic API), Subagent (Claude Code), Manual (interactive)
 - **Broker**: Alpaca API (paper trading via alpaca-py)
 - **Market Data**:
   - Alpaca API (real-time stocks/crypto)
@@ -81,7 +81,10 @@ This file provides quick-reference guidance to Claude Code when working with thi
 - Continuous autonomous trading loops
 - Traditional technical analysis (RSI, SMA, trend, volume, support/resistance)
 - Hybrid decision-making (TA + Sentiment + AI synthesis)
-- Claude Code subagent decisions (file-based, 60s timeout)
+- Three trading modes:
+  - **Automated mode**: Anthropic API for autonomous decisions (production-ready)
+  - **Subagent mode**: Claude Code file-based decisions (development)
+  - **Manual mode**: Interactive copy-paste workflow (testing)
 - Risk validation and circuit breakers
 - Paper trading execution
 - Celery orchestration with Flower web UI
@@ -111,19 +114,21 @@ This file provides quick-reference guidance to Claude Code when working with thi
 ### Running Agents
 
 ```bash
-# Run TSLA agent (proven winner)
+# Run agents in automated mode (RECOMMENDED for production)
+uv run ztrade agent run agent_tsla --automated --dry-run
+uv run ztrade agent run agent_iwm --automated --dry-run
+uv run ztrade agent run agent_btc --automated --dry-run
+
+# Or use subagent mode (for development in Claude Code terminal)
 uv run ztrade agent run agent_tsla --subagent --dry-run
 
-# Run IWM agent (small-cap sentiment edge)
-uv run ztrade agent run agent_iwm --subagent --dry-run
+# Start continuous loops (automated mode recommended)
+uv run ztrade loop start agent_tsla --automated --interval 300
+uv run ztrade loop start agent_iwm --automated --interval 900
+uv run ztrade loop start agent_btc --automated --interval 3600
 
-# Run BTC agent (crypto sentiment edge, 24/7)
-uv run ztrade agent run agent_btc --subagent --dry-run
-
-# Start continuous loops (production)
-uv run ztrade loop start agent_tsla
-uv run ztrade loop start agent_iwm
-uv run ztrade loop start agent_btc
+# Scheduled market open (waits until 9:30 AM, starts agents automatically)
+./start_trading_at_market_open.sh --automated
 
 # Celery orchestration (all agents)
 ./celery_control.sh start
@@ -146,7 +151,7 @@ uv run streamlit run dashboard.py
 ```bash
 # Agent management
 uv run ztrade agent list
-uv run ztrade agent status agent_spy
+uv run ztrade agent status agent_tsla
 
 # Company overview
 uv run ztrade company dashboard

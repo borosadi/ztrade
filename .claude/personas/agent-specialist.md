@@ -26,13 +26,21 @@ Each agent is an autonomous trader with:
 ```
 1. Fetch market data (quotes, bars, orderbook)
 2. Run technical analysis (RSI, SMA, trend, volume, support/resistance)
-3. Fetch multi-source sentiment (News + Reddit + SEC)
+3. Fetch multi-source sentiment (News + Reddit + SEC via FinBERT)
 4. Combine signals with agent personality
-5. Make decision (buy/sell/hold)
+5. Make decision using ONE of THREE modes:
+   a. AUTOMATED: Anthropic API (Claude 3.5 Sonnet) - production
+   b. SUBAGENT: Claude Code file-based - development
+   c. MANUAL: Interactive copy-paste - testing
 6. Validate against risk rules
 7. Execute trade (or simulate)
 8. Log decision and track performance
 ```
+
+**Trading Modes**:
+- **Automated** (`--automated`): Uses Anthropic API for autonomous decisions. Requires `ANTHROPIC_API_KEY`. Production-ready, runs in background.
+- **Subagent** (`--subagent`): Uses Claude Code file-based communication. Free, requires active Claude Code terminal. For development.
+- **Manual** (`--manual`): Interactive copy-paste workflow. For learning and debugging.
 
 ---
 
@@ -147,6 +155,12 @@ Trading Hours: 24/7 (weekends + holidays)
 
 ## Archived Agents (Rationale)
 
+**NOTE**: These agents have been REMOVED from active code as of 2025-11-13. References deleted from:
+- `celery_app.py` - Removed from beat schedule
+- `preflight_check.py` - Removed test data
+- Test files - Replaced with TSLA/IWM/BTC
+- Agent directories - Moved to `agents/_archived/`
+
 ### ❌ agent_spy (S&P 500 ETF)
 **Archived**: 2025-11-13
 **Reason**: Zero sentiment edge in HFT-dominated mega-caps
@@ -158,7 +172,7 @@ Trading Hours: 24/7 (weekends + holidays)
 - Our 5-min analysis is 300,000 milliseconds too slow
 - Academic research: 0% sentiment alpha for mega-caps
 
-**Location**: `agents/_archived/agent_spy/`
+**Location**: `agents/_archived/agent_spy/` (historical reference only)
 
 ---
 
@@ -173,7 +187,7 @@ Trading Hours: 24/7 (weekends + holidays)
 - News instantly priced by institutional algorithms
 - Limited edge except quarterly earnings (4x/year)
 
-**Location**: `agents/_archived/agent_aapl/`
+**Location**: `agents/_archived/agent_aapl/` (historical reference only)
 
 ---
 

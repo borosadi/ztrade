@@ -76,15 +76,24 @@ uv run ztrade agent list
 # Show agent status
 uv run ztrade agent status <agent_id>
 
-# Run agent (subagent mode - recommended)
+# Run agent - THREE MODES:
+
+# 1. Automated mode (RECOMMENDED for production/background)
+uv run ztrade agent run <agent_id> --automated --dry-run
+uv run ztrade agent run <agent_id> --automated
+
+# 2. Subagent mode (for development in Claude Code terminal)
 uv run ztrade agent run <agent_id> --subagent --dry-run
 uv run ztrade agent run <agent_id> --subagent
 
-# Manual mode (copy-paste workflow)
+# 3. Manual mode (copy-paste workflow for testing)
 uv run ztrade agent run <agent_id> --manual
 ```
 
-**Important**: API mode has been deprecated. Only subagent and manual modes are supported.
+**Trading Modes**:
+- **Automated**: Uses Anthropic API for autonomous decisions (requires `ANTHROPIC_API_KEY`)
+- **Subagent**: Uses Claude Code file-based decisions (requires active Claude Code terminal)
+- **Manual**: Interactive copy-paste workflow (for learning/debugging)
 
 ### Company Commands
 ```bash
@@ -100,8 +109,11 @@ uv run ztrade company performance
 
 ### Loop Commands
 ```bash
-# Start continuous trading loop
-uv run ztrade loop start <agent_id>
+# Start continuous trading loop (automated mode recommended)
+uv run ztrade loop start <agent_id> --automated --interval 300
+
+# Start with subagent mode (requires Claude Code terminal)
+uv run ztrade loop start <agent_id> --subagent --interval 300
 
 # Stop trading loop
 uv run ztrade loop stop <agent_id>
@@ -283,6 +295,9 @@ Required in `.env`:
 ALPACA_API_KEY=your_key
 ALPACA_SECRET_KEY=your_secret
 ALPACA_BASE_URL=https://paper-api.alpaca.markets  # Paper trading only!
+
+# Anthropic API (required for automated mode)
+ANTHROPIC_API_KEY=your_key  # Get from: https://console.anthropic.com/
 
 # Market Data Providers (at least one required)
 ALPHAVANTAGE_API_KEY=your_key     # Alpha Vantage (stocks - free: 25 calls/day)
@@ -505,9 +520,9 @@ These are enforced in `config/risk_limits.yaml` and validated in `cli/utils/risk
 - agent_iwm (IWM, 15m bars, small-cap strategy)
 - agent_btc (BTC/USD, 1h bars, crypto 24/7)
 
-**Archived Agents**: 2
-- agent_spy (no sentiment edge, HFT dominated)
-- agent_aapl (inconsistent results, limited edge)
+**Archived Agents**: 2 (REMOVED from code - no longer referenced)
+- agent_spy (no sentiment edge, HFT dominated) - Archived 2025-11-13
+- agent_aapl (inconsistent results, limited edge) - Archived 2025-11-13
 
 **Infrastructure**:
 - ✅ PostgreSQL database with 15,666 bars
@@ -535,6 +550,7 @@ These are enforced in `config/risk_limits.yaml` and validated in `cli/utils/risk
 - `cli/utils/database.py` - Database connection
 - `cli/utils/config.py` - Configuration management
 - `cli/utils/logger.py` - Logging setup
+- `cli/utils/automated_decision.py` - Anthropic API integration for automated mode
 
 **Infrastructure**:
 - `celery_app.py` - Celery task definitions

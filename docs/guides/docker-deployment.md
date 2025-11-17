@@ -288,6 +288,163 @@ docker-compose -f docker-compose.prod.yml exec trading uv run python -c "from cl
 
 ---
 
+## Celery Orchestration
+
+### Overview
+
+Celery provides task orchestration for autonomous trading loops. The system uses:
+- **Redis** as message broker and result backend
+- **Celery Worker** to execute trading tasks
+- **Celery Beat** to schedule periodic tasks
+- **Flower** as web-based monitoring UI
+
+### Quick Start
+
+```bash
+# Start all Celery services
+./celery_control.sh start
+
+# Open Flower web UI
+open http://localhost:5555
+
+# Check status
+./celery_control.sh status
+
+# View logs
+./celery_control.sh logs worker
+./celery_control.sh logs beat
+
+# Stop all services
+./celery_control.sh stop
+```
+
+### Task Flow
+
+```
+Celery Beat (Scheduler)
+    ↓ Every 5-60 min
+Task Queue (Redis)
+    ↓
+Celery Worker
+    ↓
+Trading Cycle Execution
+    ↓
+Task Result (Redis)
+    ↓
+Flower Dashboard
+```
+
+### Scheduled Tasks
+
+Tasks are configured in `celery_app.py` → `app.conf.beat_schedule`:
+
+```python
+# Example: TSLA agent runs every 5 minutes
+'agent-tsla-trading-cycle': {
+    'task': 'ztrade.trading_cycle',
+    'schedule': timedelta(minutes=5),
+    'args': ('agent_tsla', True, True),
+}
+```
+
+**Current Active Schedules**:
+- `agent_tsla`: Every 5 minutes (5m bars)
+- `agent_iwm`: Every 15 minutes (15m bars)
+- `agent_btc`: Every 1 hour (1h bars)
+
+### Monitoring with Flower
+
+Flower provides real-time monitoring at **http://localhost:5555**
+
+**Key Features**:
+- **Tasks Page** (`/tasks`): All tasks (active, succeeded, failed) with filtering
+- **Workers Page** (`/workers`): Worker status, active tasks, configuration
+- **Monitor Page** (`/monitor`): Real-time task stream, success/failure graphs
+- **Broker Page** (`/broker`): Redis connection status, queue length
+
+### Manual Task Execution
+
+```bash
+# Send trading cycle task manually
+uv run python3 -c "from celery_app import trading_cycle; trading_cycle.delay('agent_tsla')"
+
+# Send test task
+./celery_control.sh test
+```
+
+### Configuration
+
+**Celery Settings** (in `celery_app.py`):
+```python
+app.conf.update(
+    task_serializer='json',
+    accept_content=['json'],
+    result_serializer='json',
+    timezone='America/New_York',  # EST for market hours
+    enable_utc=False,
+    task_track_started=True,
+    task_time_limit=600,  # 10 minute max per task
+    worker_prefetch_multiplier=1,  # Process one task at a time
+)
+```
+
+**Changing Schedule**:
+1. Edit `celery_app.py` → `app.conf.beat_schedule`
+2. Restart beat: `./celery_control.sh restart`
+
+### Troubleshooting
+
+**Redis Connection Error**:
+```bash
+# Check if Redis is running
+redis-cli ping
+
+# Start Redis
+brew services start redis
+```
+
+**Worker Not Picking Up Tasks**:
+```bash
+# Check worker is running
+./celery_control.sh status
+
+# View worker logs
+./celery_control.sh logs worker
+
+# Restart worker
+./celery_control.sh restart
+```
+
+**Beat Not Scheduling Tasks**:
+```bash
+# Check beat logs
+./celery_control.sh logs beat
+
+# Ensure beat is running
+pgrep -f "celery.*beat"
+
+# Restart beat
+./celery_control.sh restart
+```
+
+### Celery vs Custom Loop Manager
+
+| Feature | Custom loop_manager.py | Celery + Flower |
+|---------|------------------------|-----------------|
+| **Web UI** | ❌ No | ✅ Flower |
+| **Task History** | ⚠️ JSON files | ✅ Redis backend |
+| **Monitoring** | ⚠️ Log files | ✅ Real-time dashboard |
+| **Retries** | ❌ Manual | ✅ Automatic with backoff |
+| **Distributed** | ❌ Single process | ✅ Multiple workers |
+| **Scheduling** | ⚠️ Custom | ✅ Cron + timedelta |
+| **Production Ready** | ⚠️ Basic | ✅ Battle-tested |
+
+**Recommendation**:
+- **Development**: Both work, use whichever you prefer
+- **Production (3+ agents)**: Celery for fault tolerance and monitoring
+
+---
+
 ## Monitoring
 
 ### Health Checks

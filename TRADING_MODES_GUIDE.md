@@ -311,5 +311,81 @@ uv run ztrade loop stop agent_tsla
 
 ---
 
+## 📅 Scheduling & Automation
+
+### Automatic Market Open Start
+
+Use `start_trading_at_market_open.sh` to automatically start agents at 9:30 AM ET:
+
+```bash
+# Navigate to project
+cd /Users/aboros/Ztrade
+
+# Run scheduler (waits until market open)
+./start_trading_at_market_open.sh
+
+# Or with automated mode
+./start_trading_at_market_open.sh --automated
+```
+
+**What it does**:
+1. Calculates time until market open (9:30 AM ET)
+2. Waits automatically
+3. Runs pre-flight check 5 minutes before open
+4. Starts agents at exactly 9:30 AM
+5. Shows live logs
+
+### Scheduling Options
+
+| Method | Subagent Mode | Automated Mode | Terminal Required | Computer Must Stay On |
+|--------|---------------|----------------|-------------------|----------------------|
+| **Simple Script** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| **macOS launchd** | ❌ No | ✅ Yes | ❌ No (background) | ✅ Yes (logged in) |
+| **cron** | ❌ No | ✅ Yes | ❌ No (background) | ✅ Yes |
+
+### Subagent Mode Requirements
+
+**For subagent mode to work, you MUST**:
+- ✅ Keep Claude Code terminal window **open and active**
+- ✅ Keep your computer **awake** (don't let it sleep)
+- ✅ Keep Claude Code **connected** to the session
+
+**If any of these break**: Trading will stop immediately.
+
+**Recommendation**: For unattended trading, use `--automated` mode instead.
+
+### macOS launchd (Advanced)
+
+**Best for**: Automatic daily startup with automated mode
+
+```bash
+# 1. Copy plist file
+cp com.ztrade.marketopen.plist ~/Library/LaunchAgents/
+
+# 2. Load schedule
+launchctl load ~/Library/LaunchAgents/com.ztrade.marketopen.plist
+
+# 3. Verify
+launchctl list | grep ztrade
+```
+
+**How it works**:
+- Runs Monday-Friday at 9:25 AM
+- Waits 5 minutes, then starts agents at 9:30 AM
+- Logs to `logs/launchd_*.log`
+
+**IMPORTANT**: Only works with `--automated` mode (requires `ANTHROPIC_API_KEY`)
+
+### Testing the Scheduler
+
+```bash
+# Test now (will show countdown)
+./start_trading_at_market_open.sh
+
+# Press Ctrl+C to cancel anytime
+```
+
+---
+
 **Last Updated**: 2025-11-17 00:15 ET
 **Ready for**: Monday market open with automated mode ✅
