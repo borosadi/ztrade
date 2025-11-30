@@ -1,0 +1,26 @@
+# Airflow Configuration Example for Ztrade
+# Copy this file to airflow.cfg and customize as needed
+
+[core]
+dags_folder = /opt/airflow/dags
+plugins_folder = /opt/airflow/plugins
+executor = LocalExecutor
+parallelism = 16
+dag_concurrency = 4
+max_active_runs_per_dag = 1
+load_examples = False
+default_timezone = America/New_York
+
+[webserver]
+base_url = http://localhost:8080
+web_server_port = 8080
+expose_config = True
+
+[scheduler]
+catchup_by_default = False
+max_tis_per_query = 512
+
+[logging]
+base_log_folder = /opt/airflow/logs
+logging_level = INFO
+fab_logging_level = WARN

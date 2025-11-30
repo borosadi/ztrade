@@ -1,0 +1,172 @@
+# Airflow-based Ztrade Trading System
+# Each agent runs as a separate DAG with orchestrated trading pipeline
+x-airflow-common:
+  &airflow-common
+  # Using 2.8.1 - Airflow 3.x has breaking changes (days_ago removed, operator imports changed)
+  # TODO: Upgrade to 3.x after updating DAGs (see docs/guides/airflow-3-migration.md)
+  image: apache/airflow:2.8.1-python3.11
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Ztrade-specific environment variables
+    ALPACA_API_KEY: ${ALPACA_API_KEY}
+    ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
+    ALPACA_BASE_URL: ${ALPACA_BASE_URL}
+    ALPHAVANTAGE_API_KEY: ${ALPHAVANTAGE_API_KEY}
+    COINGECKO_API_KEY: ${COINGECKO_API_KEY}
+    REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
+    REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+    REDDIT_USER_AGENT: ${REDDIT_USER_AGENT}
+    DATABASE_PATH: /opt/airflow/ztrade/data/ztrade.db
+    PYTHONPATH: /opt/airflow/ztrade
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
+    # Mount Ztrade codebase (parent directory)
+    - ..:/opt/airflow/ztrade
+    # Mount SQLite database directory
+    - ztrade-db-volume:/opt/airflow/ztrade/data
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    postgres:
+      condition: service_healthy
+
+services:
+  # PostgreSQL for Airflow metadata
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-airflow-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  # Redis for Airflow Celery (optional, for scaling)
+  redis:
+    image: redis:7.2-alpine
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
+
+  # Airflow webserver
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Airflow scheduler
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Airflow initialization (one-time)
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        # Install Ztrade dependencies as airflow user
+        pip install --user --no-cache-dir -r /opt/airflow/ztrade/requirements.txt
+
+        # Initialize Airflow database
+        airflow db migrate
+
+        # Create admin user if it doesn't exist
+        airflow users create \
+            --username admin \
+            --firstname Ztrade \
+            --lastname Admin \
+            --role Admin \
+            --email admin@ztrade.local \
+            --password admin || echo "Admin user already exists"
+
+        echo "Airflow initialization complete"
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+
+  # Airflow CLI (for management)
+  airflow-cli:
+    <<: *airflow-common
+    profiles:
+      - debug
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+
+  # Optional: Flower for monitoring Celery workers
+  flower:
+    <<: *airflow-common
+    command: celery flower
+    profiles:
+      - flower
+    ports:
+      - "5555:5555"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-airflow-db-volume:
+  ztrade-db-volume:

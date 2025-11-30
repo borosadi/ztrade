@@ -1,0 +1,62 @@
+agent:
+  id: agent_snap
+  name: Snapchat Social Media Sentiment Trader
+  asset: SNAP
+  status: active
+  created: '2025-11-29T00:00:00'
+
+strategy:
+  type: sentiment_momentum
+  timeframe: 15m
+  description: >
+    Trade Snap using sentiment-driven momentum strategy. As a mid-cap social
+    media platform, SNAP has 30-40% sentiment alpha from user growth metrics,
+    AR feature launches, advertising revenue trends, competitive dynamics
+    (TikTok, Instagram), and Gen-Z engagement narratives. 15-minute timeframe
+    captures social media news swings.
+
+  sentiment_sources:
+    - news (FinBERT on social media, AR/VR, advertising, user growth)
+    - reddit (r/stocks, r/wallstreetbets, r/socialmedia, Gen-Z discussions)
+    - sec (10-K, 10-Q, 8-K filings for material events)
+    - technical (RSI, SMA, trend, volume, price action)
+
+risk:
+  max_position_size: 5000.0
+  stop_loss: 0.04  # 4% (higher social media volatility)
+  take_profit: 0.08  # 8% (2:1 risk-reward)
+  max_daily_trades: 3
+  min_confidence: 0.60  # Standard threshold
+
+personality:
+  risk_tolerance: aggressive
+  description: >
+    Social media-focused mid-cap trader exploiting Snap's retail sentiment.
+    SNAP price responds to: user growth/engagement metrics, AR feature launches,
+    advertising revenue trends, TikTok/Instagram competition, Gen-Z brand
+    perception, and WSB retail momentum. Highly volatile mid-cap with strong
+    sentiment swings.
+
+trading:
+  market_hours: 9:30-16:00 EST
+  weekend_trading: false
+  holiday_trading: false
+
+performance:
+  allocated_capital: 10000.0
+
+operations_log:
+  - date: '2025-11-29'
+    session: 'Wave 2 Mid-Cap Expansion - SNAP Launch'
+    findings:
+      - 'SNAP selected for social media/retail sentiment (30-40% alpha)'
+      - 'High-volatility mid-cap with strong WSB retail following'
+      - 'Key catalysts: user growth, AR features, advertising revenue'
+      - 'Higher stop loss (4%) due to volatility'
+      - '15-minute timeframe captures social media news cycles'
+      - 'Risk parameters: 4% stop, 8% target, $5K max position'
+    status: 'Wave 2 - Ready for deployment'
+    next_steps:
+      - 'Monitor social media industry trends and user metrics'
+      - 'Validate 30-40% sentiment alpha hypothesis'
+      - 'Track WSB and retail investor sentiment'

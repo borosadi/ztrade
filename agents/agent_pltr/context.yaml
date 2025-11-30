@@ -1,0 +1,62 @@
+agent:
+  id: agent_pltr
+  name: Palantir AI/Data Sentiment Trader
+  asset: PLTR
+  status: active
+  created: '2025-11-29T00:00:00'
+
+strategy:
+  type: sentiment_momentum
+  timeframe: 15m
+  description: >
+    Trade Palantir using sentiment-driven momentum strategy. As a mid-cap
+    data analytics and AI platform, PLTR has 35-45% sentiment alpha from
+    government contract announcements, enterprise AI adoption, product launches
+    (AIP platform), meme stock status, and retail investor FOMO. 15-minute
+    timeframe captures AI narrative and retail momentum swings.
+
+  sentiment_sources:
+    - news (FinBERT on AI, government contracts, data analytics, enterprise)
+    - reddit (r/wallstreetbets, r/stocks, r/PLTR, retail mania tracking)
+    - sec (10-K, 10-Q, 8-K filings for contract announcements)
+    - technical (RSI, SMA, trend, volume, price action)
+
+risk:
+  max_position_size: 5000.0
+  stop_loss: 0.04  # 4% (high meme stock volatility)
+  take_profit: 0.08  # 8% (2:1 risk-reward)
+  max_daily_trades: 3
+  min_confidence: 0.60  # Standard threshold
+
+personality:
+  risk_tolerance: aggressive
+  description: >
+    AI/data-focused mid-cap trader exploiting Palantir's dual sentiment drivers.
+    PLTR price responds to: government contract wins, enterprise AI adoption
+    (AIP platform), meme stock retail FOMO, AI narrative hype cycles, and
+    WSB momentum. Unique combination of fundamental catalysts and retail mania
+    creates extreme sentiment alpha.
+
+trading:
+  market_hours: 9:30-16:00 EST
+  weekend_trading: false
+  holiday_trading: false
+
+performance:
+  allocated_capital: 10000.0
+
+operations_log:
+  - date: '2025-11-29'
+    session: 'Wave 2 Mid-Cap Expansion - PLTR Launch'
+    findings:
+      - 'PLTR selected for AI/meme sentiment (35-45% alpha)'
+      - 'Highest alpha mid-cap: fundamental + retail mania drivers'
+      - 'Key catalysts: gov contracts, AI adoption, WSB momentum'
+      - 'Meme stock status creates extreme sentiment swings'
+      - '15-minute timeframe captures AI news + retail FOMO'
+      - 'Risk parameters: 4% stop, 8% target, $5K max position'
+    status: 'Wave 2 - Ready for deployment'
+    next_steps:
+      - 'Monitor government contract announcements and AI news'
+      - 'Validate 35-45% sentiment alpha (highest mid-cap target)'
+      - 'Track WSB retail momentum and meme status'

@@ -1,0 +1,63 @@
+agent:
+  id: agent_doge
+  name: Dogecoin Meme Sentiment Trader
+  asset: DOGE/USD
+  status: active
+  created: '2025-11-28T00:00:00'
+
+strategy:
+  type: sentiment_momentum
+  timeframe: 1h
+  description: >
+    Trade Dogecoin using extreme meme sentiment strategy. As the original
+    meme coin with massive retail following, DOGE has 45-55% sentiment alpha
+    from Elon Musk tweets, social media virality, major brand adoption
+    (Tesla, Newegg), and retail mania cycles. 1-hour timeframe captures
+    viral sentiment propagation while filtering noise.
+
+  sentiment_sources:
+    - news (FinBERT on crypto news, DOGE adoption, Elon Musk coverage)
+    - reddit (r/dogecoin, r/CryptoCurrency, r/wallstreetbets, meme trends)
+    - twitter (Elon Musk tweets, #dogecoin, #DOGE, influencer activity)
+    - technical (RSI, SMA, trend, volume, price action)
+
+risk:
+  max_position_size: 5000.0
+  stop_loss: 0.05  # 5% (high meme volatility)
+  take_profit: 0.10  # 10% (aggressive 2:1 risk-reward)
+  max_daily_trades: 3
+  min_confidence: 0.58  # Lower threshold for sparse opportunities
+
+personality:
+  risk_tolerance: aggressive
+  description: >
+    Meme-focused crypto trader exploiting Dogecoin's extreme social sentiment.
+    DOGE price responds to: Elon Musk tweets (strongest driver), viral social
+    media trends, major brand adoption announcements, retail FOMO cycles, and
+    correlation to BTC. Pure retail-dominated market with instantaneous
+    sentiment propagation. 24/7 trading allows weekend meme narrative capture.
+
+trading:
+  market_hours: 24/7
+  weekend_trading: true
+  holiday_trading: true
+
+performance:
+  allocated_capital: 10000.0
+
+operations_log:
+  - date: '2025-11-28'
+    session: 'Wave 1 Crypto Expansion - DOGE Launch'
+    findings:
+      - 'DOGE selected for extreme meme sentiment alpha (45-55% edge)'
+      - 'Strongest social media driver in crypto (Elon Musk twitter dependency)'
+      - 'Pure retail market: instantaneous sentiment propagation'
+      - 'Key catalysts: Elon tweets, brand adoption, meme virality'
+      - '1-hour timeframe optimal for capturing viral sentiment'
+      - 'Risk parameters: 5% stop, 10% target (2:1 ratio), $5K max position'
+    status: 'Wave 1 - Ready for deployment and data accumulation'
+    next_steps:
+      - 'Monitor Elon Musk Twitter/X for DOGE mentions (primary alpha source)'
+      - 'Validate 45-55% meme sentiment alpha hypothesis'
+      - 'Track correlation to BTC and broader crypto market'
+      - 'Watch for viral social media trends as leading indicators'
