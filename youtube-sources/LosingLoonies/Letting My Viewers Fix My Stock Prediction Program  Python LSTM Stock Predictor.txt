@@ -1,0 +1,174 @@
+00:00 Last month, I built an AI that tried to
+00:02 predict tomorrow's stock prices using
+00:03 machine learning. It kind of worked. If
+00:05 by worked, you mean random guesses with
+00:08 extra steps. But then you guys left some
+00:09 insanely smart comments.
+00:10 I trying many model, but I am so sad.
+00:12 So, today I rebuilt the model using your
+00:14 suggestions to see if it can actually
+00:16 get smarter. Okay, quick recap. The last
+00:18 model used an LSTM or long short-term
+00:20 memory network trained on historical
+00:22 data, insider training, and sentiment
+00:24 scores to predict if a stock would go up
+00:25 the next day. I'm not certain what the
+00:27 issue is. Well, I mean probably that the
+00:29 stock market is very difficult to
+00:30 predict
+00:34 is determined by so many variables and
+00:36 then we have to compete with
+00:37 institutional investors. So while we
+00:39 might seek to find patterns in news and
+00:40 sentiment to gauge whether or not a
+00:42 stock will increase the next day,
+00:43 realistically there probably already
+00:45 thousands of people doing exactly this.
+00:47 So the opportunity in the market has
+00:49 been filled. So what should we do next?
+00:50 If we were to place ourselves on a
+00:51 Dunning Krueger curve, we'd probably be
+00:54 right here, right at the start. We know
+00:56 nothing. We are nothing. Everything
+00:58 about the code we've written could
+00:59 probably be found in countless places on
+01:01 YouTube. Or maybe you could even ask
+01:02 Chad to write a similar AI code. But
+01:04 there's one thing that we have that
+01:05 others don't. And that's an extreme
+01:07 patience. A patience so large that even
+01:09 if we never crack the code to AI stock
+01:11 prediction, we would have learned so
+01:13 much by doing these forecasting models
+01:15 that it all would have been worth it. So
+01:16 where do we go next? Well, we implement
+01:18 your changes. Of course,
+01:23 this is where we're at with this code
+01:24 right now. So if I click run
+01:29 here, we compare our machine learning
+01:30 model, which is making predictions about
+01:32 which stock to buy and sell each day in
+01:34 blue, to a buy and hold strategy where
+01:36 we just buy the S&P and never sell. This
+01:39 is being shown in green. Of course, if
+01:41 you just randomly bought and sold stocks
+01:42 each day, you could by pure chance
+01:44 actually outperform the market. So this
+01:46 is being shown in the faded gray lines
+01:48 where we evolve a bunch of portfolios
+01:50 each randomly buying and selling stocks
+01:52 each day. If our machine learning model
+01:54 greatly outperforms the random noise of
+01:56 buying and selling random stocks and the
+01:58 S&P, then we can be confident the
+01:60 model's actually working.
+02:01 You should introduce an early epoch cut
+02:02 off when the validation accuracy hasn't
+02:03 progressed for 10 to 15 epochs in a row
+02:05 to avoid overfitting.
+02:06 Easy fix. That's called early stopping.
+02:07 I didn't do that before because well,
+02:09 maybe more epochs will help this work.
+02:11 Okay, probably not. So yeah, let's
+02:13 implement that. There's no point to
+02:14 reimulate because this doesn't actually
+02:16 increase our prediction accuracy. It
+02:18 only lowers the amount of time required
+02:19 for training because the model isn't
+02:20 seeing that accuracy is not improving
+02:23 with more epochs. So, it just stops it
+02:25 early.
+02:25 I really liked your video subscribed. I
+02:27 just have a few questions about your
+02:27 video. Have you tried predicting
+02:28 tomorrow's log returns instead of rather
+02:30 if it goes up or down? What are some of
+02:31 the best performing features? How does
+02:32 your random runs work?
+02:33 In my previous model, I was just
+02:34 predicting whether or not a stock would
+02:36 go up the next day. A simple yes or no.
+02:38 But the problem with that is that it
+02:39 ignores how much the stock is expected
+02:41 to move. For example, a stock might be
+02:42 very likely to go up, but only by 0.1%.
+02:45 While another stock might have a smaller
+02:47 chance of going up, but could move by
+02:48 5%. The binary prediction treats both
+02:50 the same, which isn't very useful if
+02:52 you're trying to pick the best
+02:53 opportunities. That's why I'm now
+02:54 predicting log returns, and I agree with
+02:56 this commenter. Essentially, the
+02:58 expected percentage change for the next
+02:60 day. This gives a continuous measure of
+03:01 how much a stock might move, which lets
+03:02 us decide whether or not to buy. But it
+03:04 also allows us to rank stocks by the
+03:06 expected return. It's much closer to how
+03:07 traders actually think about
+03:09 opportunities and not just whether a
+03:10 stock goes up, but by how much.
+03:13  chat GBD. What's wrong with my
+03:16 code? Oh. Oh, there's no return. We can
+03:19 also compute the permutation importance,
+03:21 which will describe, well, the
+03:22 importance of each feature that we're
+03:23 using in our model. This doesn't
+03:25 contribute to an improvement in the
+03:26 accuracy of our model, but will allow us
+03:28 to have a better appreciation for what
+03:29 features are actually providing us with
+03:31 the most value. So you can see in this
+03:32 bar plot that things like the closing
+03:34 value, yesterday open log returns and
+03:36 20-day momentum are a couple things that
+03:38 contribute the most to our algorithm and
+03:40 allowing it to achieve a higher
+03:41 accuracy.
+03:42 You could add more features, volume
+03:43 based features, use a treebased model
+03:45 and in that use time decay weights with
+03:46 recent data points have more weight.
+03:47 Okay, that's a fantastic idea. The
+03:49 market changes over time. Patterns
+03:50 appear, disappear, and new ones emerge
+03:52 as people react to them. So if our model
+03:53 is trying to learn from these patterns,
+03:55 it makes sense to give more weight to
+03:56 the most recent data. That way, the
+03:58 model focuses on what's currently
+03:59 relevant rather than being overly
+04:01 influenced by old market behavior that
+04:03 might no longer apply. Now, with all the
+04:04 changes we've made, it's probably time
+04:05 that we test the model.
+04:11 Now that we have log returns, we're
+04:12 actually going to have to change the way
+04:13 we do our back testing. We now have to
+04:15 consider the predicted log return where
+04:16 we can comb through each stock for each
+04:18 day and find the highest return. Now, if
+04:20 all the returns are below zero, we just
+04:22 won't buy for that day.
+04:26 What you might notice is that the
+04:27 predicted logar strategy, which we
+04:28 believe to be better, might actually be
+04:30 performing worse than our previous
+04:31 version one. In reality, this might be
+04:33 better, but it's still not able to
+04:34 accurately make predictions and is just
+04:35 fitting in with the noise of all the
+04:37 randomly evolved portfolios buying and
+04:39 selling random stocks each day. So, this
+04:40 is still nothing more than a complete
+04:41 guess. So, where do we go from here?
+04:43 Well, I'll tell you. You keep giving me
+04:44 comments telling me either how dumb I am
+04:46 or giving suggestions on how to improve
+04:48 my code. You guys have been so kind and
+04:50 helpful, and I'm so thankful to every
+04:51 single one of you that's watched my last
+04:53 video. And if you've enjoyed this video,
+04:54 then subscribe so you don't miss my next
+04:56 iteration of this code version three.

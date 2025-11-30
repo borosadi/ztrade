@@ -13,9 +13,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from cli.utils.broker import get_broker
 from cli.utils.alphavantage_provider import get_alphavantage_provider
 from cli.utils.coingecko_provider import get_coingecko_provider
-from cli.utils.database import market_data_store, sentiment_data_store
 from cli.utils.sentiment_aggregator import get_sentiment_aggregator
 from cli.utils.logger import get_logger
+# Use new SQLite database
+from ztrade.core.database import market_data_store, sentiment_data_store
 
 logger = get_logger(__name__)
 

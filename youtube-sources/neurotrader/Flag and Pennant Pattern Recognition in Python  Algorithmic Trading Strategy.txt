@@ -1,0 +1,377 @@
+00:00 in this video we're going to automate
+00:02 flag and pennant patterns using python
+00:04 I'll show how to algorithmically
+00:06 identify these patterns then back test
+00:08 their performance the flag and pennant
+00:10 patterns are very similar they both
+00:12 describe a brief interruption in a trend
+00:14 before it hopefully continues a flag has
+00:17 two roughly parallel trend lines
+00:19 creating a price Channel opposite of the
+00:21 prevailing Trend while Penance a pointed
+00:24 flag have converging bounding lines with
+00:26 a negative and positive slope I'm not
+00:28 terribly interested in these
+00:30 distinctions rather I'm interested in
+00:32 the core idea that all these patterns
+00:34 embody that is a brief Interruption and
+00:36 a trend as an entry point for a trade
+00:38 that will be the main focus of this
+00:40 video and we will see that it is a
+00:42 pretty good entry point I'd like to note
+00:44 that these patterns are rather
+00:45 subjective I'll do my best to explain
+00:47 why I implemented the patterns in the
+00:49 way I did but a technical analysis Guru
+00:52 may think some of the patterns my code
+00:54 finds are not legitimate Flags or
+00:56 Penance the code I present should offer
+00:58 a base for modification that you can
+00:60 adjust to to your own interpretations of
+01:02 these patterns before we start I need to
+01:04 Define some terminology I'll use for the
+01:06 rest of this video this is a bull flag
+01:09 that the code finds the area the two
+01:11 blue lines Encompass I will call the
+01:13 flag the preceding Trend marked with a
+01:16 white line I will call the pole the
+01:18 start point of the pole I will call the
+01:19 base the end point of the pole I will
+01:22 call the tip the length of time that the
+01:23 trend takes I will call the pole width
+01:25 the length of time that the flag takes I
+01:27 will call the flag width the difference
+01:29 between the pull tip and the full base I
+01:31 will call the pole height and the
+01:32 difference between the tip and the
+01:34 lowest price in the flag I will call the
+01:36 flag height the pattern is confirmed
+01:38 once the price breaks out of the range
+01:40 defined by the blue lines in the
+01:42 direction of the preceding Trend I'll
+01:44 call this the confirmation point this is
+01:46 when a trade entry could take place with
+01:48 that defined let's get into the pattern
+01:50 recognition I actually created two
+01:53 different identification methods after
+01:55 going over the first version I'll
+01:57 explain why I felt another was necessary
+01:59 anyways both versions are controlled by
+02:02 a single adjustable parameter I call the
+02:05 order
+02:05 the order controls the size of the
+02:08 patterns found here's a pattern found
+02:09 when the order parameter is 7 and here's
+02:13 a pattern when the order parameter is
+02:15 48. the first method is based on these
+02:17 idealized drawings and these drawings we
+02:20 can see that there's a preceding Trend
+02:22 then the price makes a w or m shape for
+02:25 Bull and Bear Flags respectively this
+02:28 implementation looks for those shapes
+02:30 the shapes have five important points
+02:32 which I will label here these will be
+02:33 used to identify the m and W type shapes
+02:36 to identify the patterns I'm going to
+02:39 use both the rolling window algorithm
+02:41 and the perceptually important points
+02:43 algorithm if you are unfamiliar with
+02:45 these two algorithms I covered them in
+02:47 detail in my previous video which I have
+02:49 linked in the corner I recommend
+02:51 watching that before continuing with
+02:53 this one anyways let's look at an
+02:55 example here is a bull flag match the
+02:58 algorithm operates just using the
+02:60 closing price so let's look at that for
+03:02 a more clearer picture the base of the
+03:04 flagpole is identified using the rolling
+03:06 window algorithm the tip of the pole is
+03:09 the maximum price found since the base
+03:11 the five important points in the flag
+03:12 are found using the perceptually
+03:14 important points algorithm using data
+03:16 from the tip to the current points here
+03:18 are the five found perceptually
+03:20 important points in red the upper
+03:22 bounding line of the flag is the line
+03:24 connecting the first and third point the
+03:26 lower bounding line of the flag is the
+03:28 line connecting the second and fourth
+03:30 points the pattern is confirmed when the
+03:32 price breaks out of the bounding lines
+03:34 if we zoom in a bit we can see that the
+03:36 current Point does break out of the
+03:38 range confirming this pattern let's look
+03:39 at the code both versions of the flag
+03:42 pattern recognition make use of this
+03:44 data class it holds all the information
+03:46 that makes up a flag pattern the x and y
+03:49 coordinate of the base tip and
+03:51 Confirmation points a Boolean if it's a
+03:54 flag or a pennant and the flag
+03:56 attributes the flag pattern recognition
+03:59 is implemented in this function it takes
+04:01 an array which should be the closing
+04:03 price and the order parameter the order
+04:06 has a minimum value of 3 which we
+04:08 enforce as the pattern forms its details
+04:12 are kept in these pending variables if
+04:14 confirmed the patterns are assembled in
+04:16 these lists we Loop through each candle
+04:19 in the data at each bar we check if
+04:21 there is a confirmed local top or bottom
+04:24 with the rolling window algorithm if
+04:26 there is we set the pending patterns
+04:28 base at the found top or bottom bare
+04:31 flags are set at tops and bull flags are
+04:33 set at bottoms
+04:35 we use the functions check bear pattern
+04:37 Pips and check bull pattern Pips to see
+04:39 if the pending pattern is confirmed they
+04:42 both return true on confirmation if the
+04:44 pattern is confirmed we record it into
+04:46 the proper list and set the pending
+04:48 variable To None to avoid adding the
+04:50 same pattern multiple times let's go
+04:53 over the check bull pattern Pips
+04:54 function this is where the rules about
+04:57 what qualifies as a pattern are enforced
+04:59 it takes the pending pattern the closing
+05:01 price array the current index and the
+05:04 order parameter we get the data from the
+05:06 base of the pole up to and including the
+05:09 current price we find the max price
+05:11 since the bottom this is our pull tip we
+05:13 check that there has been at least five
+05:15 or half the order parameter candles
+05:17 since the tip we ensure the flag width
+05:19 is less than 50 percent of the pull
+05:21 width then we ensure the flag height is
+05:23 less than 50 percent of the height of
+05:25 the pole these 50 figures could be
+05:28 tweaked to adjust the pattern selected I
+05:31 chose them to be quite lenient they
+05:33 should remain less than 100 percent
+05:35 though if we've made it this far we find
+05:37 the five perceptually important points
+05:39 from the tip to the current point the
+05:42 center pip at index 2 needs to be
+05:44 greater than its neighbors to ensure the
+05:45 W shape we then compute the slope and
+05:48 intercept of the flag lines we find the
+05:51 index where the two lines intersect if
+05:54 they are parallel we set the
+05:55 intersection to a large negative value
+05:57 we check to ensure the lines don't
+05:60 intersect in the flag area if the
+06:03 intersection is negative it is before
+06:05 the pull tip which means the lines are
+06:07 diverging if the intersection is
+06:09 negative and too close to the tip the
+06:11 lines are diverging a lot so we filter
+06:13 that out this negative 1.0 could be
+06:16 replaced with a larger negative value to
+06:19 further filter diverging Flags finally
+06:21 we compute the value of the upper flag
+06:23 line at the current point we check to
+06:26 see if the current price has broken out
+06:28 at this point the pattern is confirmed
+06:30 we check the lower flag line slope to
+06:33 decide if it's a pennant or not we fill
+06:35 out all the details in the pending
+06:37 pattern and return true I won't walk
+06:40 through the code for checking bear
+06:41 patterns it is nearly identical but the
+06:44 rules are symmetrically flipped to align
+06:46 with bare patterns the full code is
+06:48 available in the description so you can
+06:50 take a look if you wish now that we've
+06:52 gone over the code let's see how these
+06:54 patterns perform we'll look at hourly
+06:56 data for Bitcoin tether from 2018
+06:57 through the end of 2022 to backtest
+07:01 we'll find all the patterns in the data
+07:02 across a wide range of the order
+07:04 parameter then see how the price changes
+07:07 over the next flag width meaning if we
+07:09 find a pattern with a flag width of 10
+07:11 candles we will simulate holding a
+07:13 position for 10 candles after the
+07:15 pattern is bound I think this is a
+07:17 natural rule as a larger flag would
+07:19 warrant a longer held position I did not
+07:22 include any stops or take profit rules
+07:24 that isn't to say they wouldn't help but
+07:26 I just want to get a baseline idea of
+07:28 how the market behaves after the
+07:30 patterns are found here are the bull
+07:32 flag results in the top left we see the
+07:35 number of of bull Flags found at each
+07:36 order parameter in the top right we see
+07:39 the average log return which is roughly
+07:41 the percentage change the amount the
+07:43 price changes over the next flag width
+07:45 after a pattern is detected in the
+07:47 bottom left we have the total log return
+07:48 the sum of returns at each order
+07:50 parameter and the bottom right is the
+07:53 win rate of simulated trades we can see
+07:56 at the lower order parameter values the
+07:58 average return is consistently positive
+08:00 so smaller Flags worked well while
+08:03 larger Flags didn't perform the win
+08:05 rates on the lower values of the
+08:07 parameter are also quite attractive
+08:09 several are above 60 percent the win
+08:12 rates should be interpreted along with
+08:14 the number of patterns as it is easier
+08:16 to achieve a higher win rate with a
+08:17 lower count of patterns here are the
+08:20 Bear Flag results everything is the same
+08:22 except the returns are multiplied by
+08:24 negative one this is to simulate a short
+08:27 position we can see that again the lower
+08:29 parameter values are fairly good but the
+08:31 higher parameter values are decent as
+08:33 well with only a few parameter values
+08:35 losing overall the Penance however did
+08:37 not do as well this is the bull pennant
+08:40 data they are found much less frequently
+08:42 than the flags and their performance is
+08:44 pretty inconsistent except that the
+08:45 higher values of the order parameter and
+08:48 finally here are the bare pennant
+08:49 results which did not do well at all in
+08:52 fact it is so bad it may be good as a
+08:55 long entry overall it seems the flags
+08:57 works better than the Penance at least
+08:59 on hourly Bitcoin data I was unsatisfied
+09:02 using just this identification algorithm
+09:04 the perceptually important points
+09:06 Loosely enforces the M or W shape in the
+09:09 flag area I was curious if that even
+09:12 mattered so I made a second version
+09:13 which pays less attention to the shape
+09:15 the price makes in the flag this second
+09:18 version makes use of the trendline
+09:19 algorithm I published recently I will
+09:22 not go over it again here but I explain
+09:24 it in detail in the video linked in the
+09:26 corner I'd watch that before continuing
+09:28 if you haven't seen it already I also
+09:30 changed the poll identification to
+09:32 connect a rolling window bottom and top
+09:35 instead of using the maximum or minimum
+09:37 price since a single top or bottom this
+09:39 was to hopefully get the number of
+09:41 patterns found to scale more
+09:42 monotonically with the order parameter
+09:45 anyways let's look at an example here is
+09:48 a flag identified using the trendline
+09:50 algorithm we again only look at the
+09:52 closing price so let's see just that we
+09:55 identify the pole base as a rolling
+09:57 window bottom the pull tip is a rolling
+09:59 window top we fit trend lines using the
+10:02 trendline algorithm with data from the
+10:03 tip to the candle 1 prior to the current
+10:06 the current candle is excluded as we use
+10:08 that to check for a breakout of the
+10:10 range and as we see there is a breakout
+10:13 on the last Point confirming this
+10:15 pattern let's look at the code the
+10:18 second version of black pattern
+10:20 recognition is implemented in this
+10:22 function it's very similar to the
+10:24 previous version except we draw the poll
+10:26 between adjacent local bottoms and tops
+10:28 pending bull flags are triggered on a
+10:31 found top and pending bear flags are
+10:33 triggered on a found bottom we record
+10:36 the tip coordinates as the found's top
+10:38 or bottom will serve as the pole tip the
+10:41 pending patterns are checked for
+10:42 confirmation with the check bull pattern
+10:44 trend line and check bear pattern
+10:45 trendline functions let's look at the
+10:48 bull pattern trendline function
+10:50 we first ensure that the tip is the
+10:52 maximum price found up to but not
+10:54 including the current price we calculate
+10:56 the pole and flag dimensions we verify
+10:60 the flag width is less than half the
+11:02 width of the pole then we verify the
+11:04 flag height is less than 75 percent of
+11:06 the pole height in the last version I
+11:09 used 50 I changed it to 75 percent to be
+11:12 more lenient and thus find more patterns
+11:15 we use the fit trendline single function
+11:18 from the trend lines video to find the
+11:20 trend lines from the tip to the candle
+11:22 prior to the current not including the
+11:25 current price
+11:26 we check that the price has broken out
+11:28 of the upper trend line confirming the
+11:30 pattern we set it as a pennant if the
+11:32 lower flag line slope is positive then
+11:35 fill out the details about the flag and
+11:38 return true
+11:39 I purposely was more lenient in the
+11:41 construction of the second version to
+11:43 get more patterns and better test the
+11:45 idea of a brief Interruption and a trend
+11:47 as a trade entry
+11:49 again using hourly Bitcoin data as our
+11:52 test set we get these results for the
+11:54 bull Flags found the number of patterns
+11:57 found monotonically scales with the
+11:58 order parameter in this version which is
+12:00 a nice property the bull Flags in this
+12:03 version work on nearly every parameter
+12:05 value favoring the larger values this is
+12:08 in contrast to the results with the
+12:10 previous version the win rate is above
+12:12 50 percent on most values as well the
+12:15 average pattern turn is also quite high
+12:17 on many values here is the Bear Flag
+12:20 performance and it's even better working
+12:23 well on all but few parameter values
+12:26 when I first saw this I seriously
+12:28 considered not releasing this video but
+12:30 uh here we are the fact that the pattern
+12:33 works on both the long and short side is
+12:35 a good sign symmetry like this is not
+12:38 very common in my experience
+12:40 the bull Penance with the second version
+12:42 are again inconsistent nothing compared
+12:45 to the flags the bare pennants are the
+12:47 same story inconsistent not very good
+12:50 overall we found that the idea behind
+12:52 Bull and Bear flags that being a brief
+12:54 Interruption and a trend appears to be a
+12:56 decent entry point Penance at least as I
+12:59 implemented them do not perform well
+13:01 compared to Flags the definition of a
+13:03 flag we built is very loose further
+13:06 refinement may be desired to find
+13:07 textbook or legitimate patterns but I'm
+13:11 quite happy with the results found
+13:12 eventually I would like to do a
+13:14 follow-up video that groups the flags
+13:16 and pennants found together and trains a
+13:18 classifier to decide whether a pattern
+13:20 is to be traded or not the classifier
+13:23 could be given the flag width flag
+13:25 height pole height pull width and the
+13:27 slopes of the flag bounding lines as
+13:29 input features this way we could find
+13:32 what attributes matter and what don't in
+13:35 my mind the truly legitimate flag
+13:37 pattern is the one that works not the
+13:39 one that looks like pictures and books
+13:41 it would be interesting to find what
+13:43 that is in a data-driven fashion
+13:45 anyways that's it for this one thanks
+13:47 for watching remember to drink some
+13:49 water

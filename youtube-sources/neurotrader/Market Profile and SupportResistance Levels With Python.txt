@@ -1,0 +1,295 @@
+00:00 in this video I'll show a data-driven
+00:02 technique to find support and resistance
+00:04 levels implemented with python this
+00:06 technique extracts support and
+00:07 resistance levels from the market
+00:08 profile the visualization you're seeing
+00:11 now shows the closing price on the left
+00:12 and the current estimation of the market
+00:14 profile on the right the market profile
+00:16 is a charting technique to show where
+00:18 price spends the most time the market
+00:20 profile is calculated using the last 168
+00:23 closing prices this is hourly data so
+00:25 168 is one week of data the significant
+00:28 peaks in the market profile are marked
+00:30 with red dots and the lengths of the
+00:32 Orange Lines beside the Peaks are the
+00:34 prominences we'll go over what the
+00:36 market profile is and what Peak
+00:37 prominence is in the video the
+00:40 motivation of this technique is based
+00:41 around the idea that support and
+00:43 resistance are levels in price where
+00:45 prices slowed or stopped altogether with
+00:47 this definition if we find levels where
+00:49 the price tends to spend more time then
+00:51 the price is slowed at those levels or
+00:53 revisits those levels often and thus
+00:55 those levels are support and resistance
+00:57 as an example let's look at hourly
+00:59 Bitcoin tether data in 2022 here is a
+01:02 histogram of the prices over the whole
+01:04 year we can see that a chunk of closing
+01:07 prices happened here at 10.3 and on the
+01:10 price graph we see that price spent a
+01:11 chunk of time sitting at this level this
+01:13 histogram is the market profile but a
+01:15 histogram is not the best way to
+01:17 represent how price was distributed
+01:18 Through Time a histogram groups prices
+01:20 into a number of bins and the
+01:22 representation is blocky it's hard to
+01:24 pick out exactly where the Peaks are a
+01:27 better way to represent the market
+01:28 profile is with a kernel density
+01:30 estimation here's the kernel density
+01:32 estimate plotted in red on top of the
+01:34 histogram we can see that they have the
+01:36 same information but with the kernel
+01:38 density estimate we can more accurately
+01:40 pinpoint the peaks in the distribution
+01:42 kernel density estimation is more
+01:44 computationally intensive than the
+01:46 histogram but the added accuracy makes
+01:48 it worth it this function constructs the
+01:50 markup profile with a kernel density
+01:52 estimation and binds The prominent peaks
+01:55 in the market profile as input it takes
+01:57 an array of logarithmic closing prices
+01:59 and the current logarithm the average
+02:01 true range it also has a few parameters
+02:03 to control how the market profile is
+02:05 constructed and how the levels are
+02:07 selected the first part of the function
+02:09 creates weights for each price in the
+02:11 data given these weights are used by the
+02:13 kernel density estimation but ignore the
+02:15 weights for now we'll talk about them in
+02:17 a moment this line uses the scipy
+02:20 function gaussian KDE to get the kernel
+02:22 density estimate it returns a callable
+02:24 function we save it as kernel the kernel
+02:26 density estimation has an input called
+02:29 bandwidth this controls the smoothing of
+02:31 the distribution we use the average true
+02:34 range multiplied by a constant to serve
+02:36 as the bandwidth we multiply it by ATR
+02:38 malt which is one of the input
+02:40 parameters in the function here is the
+02:42 market profile with ATR malt values of 1
+02:45 3 and 5. we can see that as the
+02:47 multiplier gets larger the distribution
+02:49 becomes smoother and there are less
+02:51 Peaks three seems like a good compromise
+02:53 to me but setting the bandwidth
+02:55 optimally is difficult and there's
+02:57 typically some subjectivity into it it's
+02:59 always a trade-off after this line we
+03:01 use the kernel to build our Market
+03:03 profile to do this we find the minimum
+03:05 and maximum price in our input data we
+03:08 create a grid of 200 prices equally
+03:10 spaced from the minimum to the maximum
+03:12 since we are using logarithmic prices
+03:14 each price and the grid has a constant
+03:16 percentage increase a different number
+03:18 than 200 could be used you get more
+03:20 accuracy with a higher number but at the
+03:22 cost of more computation time I think
+03:24 200 is plenty enough and perhaps it's
+03:26 even Overkill then we assess the kernel
+03:28 at each price in the grid our final
+03:30 Market profile is held in the variable
+03:32 PDF this is what I'm actually plotting
+03:34 for the market profile that you're
+03:36 seeing on the right now let's talk about
+03:38 the weights that we ignored earlier up
+03:40 until now our weights for each input
+03:41 have looked like this all ones across
+03:44 the entire set equal weights the prices
+03:46 at the very beginning of the data factor
+03:48 into the construction of the market
+03:49 profile just as much as the most recent
+03:52 price in trading applications we're
+03:54 primarily concerned with what the price
+03:56 is going to do in the future off to the
+03:58 right of the chart the most recent price
+03:60 this is the closest to the Future prices
+04:02 temporally the price one hour ago
+04:05 probably has more to do with the future
+04:06 price than the price one year ago the
+04:08 market profile should respect this so we
+04:10 employ a time waiting the time waiting
+04:12 is controlled by this parameter first W
+04:14 if burst W is set to 1 then equal
+04:18 weights will be used if it is set to 0.5
+04:20 then the first price the price furthest
+04:23 in the past will have half the weight of
+04:26 the most recent price we set up the
+04:27 weights by finding a step size that
+04:29 linearly increases the weights from the
+04:31 first to last over the length of data in
+04:33 this line we create the weights here's
+04:36 the plot of the weights at various
+04:37 values of the first W function parameter
+04:41 if the first weight value is set below
+04:43 zero then the data furthest in the past
+04:45 has no influence on the market profile
+04:47 we floor negative weights at zero I
+04:49 don't think a negative start W is useful
+04:51 as you can just pass in less data while
+04:54 probably not very practical setting the
+04:56 first W parameter greater than one will
+04:58 actually wait past observations higher
+04:60 than recent observations here are the
+05:02 market profiles constructed with
+05:04 different time weightings all of these
+05:06 have an ATR Mall of three now we can
+05:08 look at the last part of this function
+05:10 actually selecting the levels we will
+05:13 use a technique from topography called
+05:15 prominence the peak selection is
+05:17 controlled with the function parameter
+05:19 prom thresh the minimum valid value is
+05:21 zero which means there is no prominence
+05:24 filtering let's look at the peaks with
+05:26 no filtering each Peak is marked with a
+05:29 red dot I'll plot each peak's prominence
+05:32 with orange lines coming down from the
+05:33 peak as you can see some Peaks are very
+05:36 pronounced and obvious While others are
+05:38 little bumps that might just be noise
+05:40 prominence is is calculated by looking
+05:42 at the neighboring points around the
+05:43 peak and finds the minimum value on
+05:46 either side of the peak the higher
+05:48 minimum on either side is called the
+05:50 lowest contour line the difference
+05:51 between the peak and the lowest contour
+05:54 line is the prominence on the graph you
+05:56 can see that the bottom of the Orange
+05:57 Line corresponds to a local minimum
+05:60 scipy already has prominence implemented
+06:02 for us but if you want more detail about
+06:04 this calculation the scipy documentation
+06:06 has what you're looking for I'll link it
+06:09 in the description in the code we find
+06:11 the max value and multiply it by The
+06:13 prominent thresholds you get the minimum
+06:15 value for prominence we call the sci Pi
+06:17 function find Peaks using our minimum
+06:19 value finally we Loop through each of
+06:21 the bound Peaks and add the price to the
+06:24 list we exponentiate them to get the
+06:26 actual price values as again we are
+06:28 using logarithmic prices here are the
+06:30 Peaks selected with different values of
+06:32 the prominence threshold as it gets
+06:35 higher only the most significant Peaks
+06:36 are selected these prominence values
+06:38 could be used to rank support and
+06:40 resistance levels by significance I have
+06:42 not yet done the research necessary to
+06:44 speak more on this idea but I think it's
+06:46 a cool idea so perhaps there will be a
+06:48 future video utilizing support and
+06:50 resistance ranking if I find something
+06:52 interesting at this point we've only
+06:54 found support and resistance levels in
+06:56 Sample given a set of data these bound
+06:59 levels are only available for real-time
+07:01 use on the last point of data we can't
+07:04 cheat by using future data so to use the
+07:06 support and resistance levels and a
+07:08 trading strategy we need to perform the
+07:10 entire procedure we just went over in a
+07:12 rolling window this is what the
+07:14 visualization I'm showing now is doing
+07:16 the levels drawn are recalculated with
+07:18 each new price let's look at the code
+07:20 for this this function handles the
+07:22 rolling window
+07:24 it takes a data frame with open high low
+07:26 and close prices and you look back to
+07:28 calculate the support and resistance
+07:30 levels the same parameters from the
+07:32 previous function are also passed down
+07:34 we find the average true range with the
+07:37 given look back this is using the pandas
+07:39 technical analysis package we create a
+07:42 list the same length as the input data
+07:44 to store the found support and
+07:45 resistance levels we Loop through each
+07:48 candle in the data set we get the most
+07:50 recent values and convert them to
+07:52 logarithmic prices we call the find
+07:54 levels function which we already went
+07:56 over then save the current levels this
+07:58 function will return a list of lists
+08:00 each candle has a list of the current
+08:03 support and resistance levels that's it
+08:05 for the support and resistance algorithm
+08:07 but now we'll show a very simple trading
+08:09 strategy that utilizes it it is a trend
+08:12 following strategy when the price
+08:14 penetrates one of the lines from below
+08:16 we take a long position when the price
+08:18 penetrates one of the lines from above
+08:20 we take a short position this strategy
+08:23 always has a position in the market long
+08:25 or short let's look at the code for this
+08:27 this function takes a data frame the
+08:29 Open high low closed data and levels
+08:32 which is the list of lists the support
+08:34 and resistance levels at each candle the
+08:36 one we got from the previous function we
+08:38 create a signal array for each price in
+08:40 the data we keep track of the current
+08:42 signal with this variable we Loop
+08:45 through each candle if the current
+08:47 support and resistance levels are not
+08:48 available we continue we get the current
+08:50 closing price and the last closing price
+08:53 we Loop through each of the levels we
+08:55 check to see if the price has penetrated
+08:57 the level from below if it has we set
+08:59 the current signal to 1 and we check if
+09:02 the price has penetrated one of the
+09:03 levels from above if it has we set the
+09:06 current signal to negative one one means
+09:08 a long position and negative 1 means a
+09:10 short position we save the current
+09:12 signal to the signal array this strategy
+09:15 works well with longer term support and
+09:16 resistance levels we'll test it using
+09:18 daily Bitcoin data we use a lookback of
+09:21 365 which is one year so you can
+09:23 calculate the levels I used a Time
+09:25 weighting of 1 equal weights this way
+09:28 longer term support and resistance
+09:29 levels will be found we set the
+09:31 prominence threshold to 0.25 here is the
+09:35 cumulative log return of this strategy
+09:37 its performance is okay the win rate of
+09:40 the strategy is quite amusing long
+09:42 trades have a win rate of 20 percent but
+09:44 the average winning trade is 190 percent
+09:47 and the average losing trade is negative
+09:49 five percent the short trades also have
+09:51 a win rate of 20 percent the average
+09:53 winning short trade is 30 percent while
+09:55 the average losing short trade is
+09:57 negative four percent there's only 39
+09:59 trades in total so I'll just display
+10:01 them here pause if you want to look this
+10:03 isn't a very good strategy by any means
+10:06 but it shows the support and resistance
+10:07 lines the algorithm draws have some
+10:09 potency I'll be making more videos using
+10:12 this algorithm in the future and perhaps
+10:13 I'll make more videos showing some other
+10:15 methods of finding support and
+10:17 resistance levels as this is certainly
+10:19 not the only way to do it that's it for
+10:21 this one thank you for watching

@@ -30,3 +30,19 @@ personality:
 
 performance:
   allocated_capital: 10000.0
+
+operations_log:
+  - date: '2025-11-19'
+    session: 'Loop Manager CPU Spin Fix & Decision Mode Testing'
+    findings:
+      - 'Fixed CPU spin bug in loop manager affecting all agents'
+      - 'Loops now properly sleep during off-market hours (0% CPU vs 99% before)'
+      - 'Added --detach mode for efficient background operation'
+      - 'Small-cap sentiment edge hypothesis: Ready for validation'
+      - 'Multi-source sentiment working: News, Reddit, SEC analysis functional'
+      - 'Technical analysis limited: No historical bars (PostgreSQL not running)'
+    status: 'Agent configured and tested, awaiting market hours'
+    next_steps:
+      - 'First live trading session to validate 20-30% sentiment alpha hypothesis'
+      - 'Monitor small-cap sentiment propagation delay (15-60 minutes)'
+      - 'Track performance vs SPY to measure small-cap edge'

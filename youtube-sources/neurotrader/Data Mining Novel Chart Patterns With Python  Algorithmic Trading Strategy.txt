@@ -1,0 +1,576 @@
+00:00 in this video we are going to data my
+00:02 novel chart patterns with python I'll
+00:04 outline an approach to find High
+00:05 performing patterns in the price
+00:07 structure on any Market the
+00:09 visualization you are seeing now is the
+00:11 current price structure pattern drawn in
+00:13 white we will save and normalize each of
+00:15 these shapes then group them into
+00:17 clusters to find recurring patterns in
+00:19 price structure we will assess the
+00:21 future behavior of the market after
+00:23 these price structure patterns manifest
+00:25 to find profitable patterns if you like
+00:27 more advanced algorithmic trading
+00:29 content like this consider subscribing
+00:31 there are three main steps in this
+00:32 approach first we build a data set of
+00:34 price shapes then we cluster the data
+00:37 set into groups of similar patterns then
+00:39 we assess and select the best patterns
+00:41 that tend to precede a move in the price
+00:43 first we need to build our data set in
+00:45 this example we are finding five
+00:47 perceptually important points on the
+00:49 recent 24 candles of data if you are
+00:51 unfamiliar with the perceptually
+00:53 important Point algorithm I cover it in
+00:55 detail in my chart pattern algorithms
+00:57 video linked in the corner but quickly
+00:59 the perceptually Point algorithm always
+01:01 selects the first and last points on a
+01:03 section of data then selects additional
+01:06 internal points by finding the points
+01:08 with the maximum distance from two
+01:10 adjacent selected points I drew lines
+01:12 between the Five Points to make it a
+01:14 little easier to see but these Five
+01:16 Points serve as a summary of The Price
+01:18 action over the last 24 candles of data
+01:21 this reduces dimensionality which makes
+01:23 it much easier and faster for clustering
+01:25 algorithms or other algorithms to
+01:28 process we compute the perceptually
+01:30 important points for each subsequence of
+01:32 24 candles across the entire data set
+01:34 and record them we will cluster these
+01:36 subsequences to find similar groups this
+01:39 idea originated in 2001 with the
+01:41 publication of this paper you may have
+01:43 noticed earlier but as this
+01:45 visualization runs the pattern shape
+01:47 does not update with each new candle
+01:49 there's an important reason for this in
+01:51 2003 this paper was published that
+01:53 critiqued the 2001 paper it claimed
+01:56 subsequence clusters are meaningless
+01:58 this paper goes into great detail and it
+02:00 is worth reading if you're interested in
+02:02 pattern Discovery for trading but in
+02:04 short adjacent subsequences are not
+02:06 unique they have considerable overlap
+02:09 this overlap causes trivial matches and
+02:11 causes the patterns found to be
+02:13 essentially random the authors of the
+02:15 2001 paper made an update to their
+02:17 method to prevent meaningless pattern
+02:19 Discovery and this 2005 paper this
+02:22 updated method is the one we will use we
+02:24 compute the perceptually important
+02:25 points with a sliding window on the
+02:27 recent 24 candles but only include it in
+02:29 the data said if the internal
+02:31 perceptually important points are
+02:32 different from the last subsequence this
+02:34 change causes each subsequence to be
+02:36 more unique and avoid trivial
+02:38 meaningless clusterings it also reduces
+02:40 the total amount of subsequences to
+02:42 Cluster which reduces the processing
+02:44 time an added bonus let's look at the
+02:46 code for this the code for the entire
+02:49 data mining process is managed by a
+02:51 class pip pattern minor we first load in
+02:54 some data from a CSV we convert the
+02:56 prices to logarithmic prices the class
+02:59 assumes that the prices are logarithmic
+03:01 so this must be done we get the closing
+03:03 price as an array then we create an
+03:05 instance of the class it has three
+03:07 parameters the number of perceptually
+03:09 important points the look back which is
+03:11 the number of candles the Pips will be
+03:13 found on and the hold period the hold
+03:16 period will be discussed more later but
+03:18 it is how many candles a position will
+03:19 be held after a selected pattern is
+03:21 found we pass our closing price array to
+03:23 the classes train function the N reps
+03:26 parameter will be discussed later here
+03:28 is the anit function of the class class
+03:31 it doesn't do anything but declare
+03:32 variables the main thing of note for now
+03:34 is the input parameters are saved in
+03:36 these values here is the train function
+03:39 we save the closing price array as data
+03:42 in the class then we call this function
+03:44 find unique patterns this function
+03:46 handles the creation of the unique pip
+03:48 patterns which we will cluster later we
+03:51 will keep track of the coordinates of
+03:52 the last subsequence in this list we
+03:55 Loop through each candle in the data set
+03:57 we find the most recent section of the
+03:59 data and store in this variable window
+04:02 when we initiated the class we set look
+04:03 back to 24 so window contains the 24
+04:07 most recent closing prices we find the
+04:09 perceptually important points on the
+04:11 recent data we update the x coordinates
+04:13 of the perceptually important points to
+04:15 match the indices of the entire array we
+04:17 Loop through the internal perceptually
+04:19 important points ignoring the first and
+04:22 last and compare them to the last set
+04:24 found if there is a difference found we
+04:26 set the Boolean same to false and break
+04:29 if the internal points are not the same
+04:31 we record the perceptually important
+04:32 points as a unique pattern we zcore
+04:36 normalize the price values by
+04:37 subtracting their mean and dividing by
+04:39 the standard deviation this will cause
+04:41 each pattern to have a similar price
+04:43 scale which allows us to Cluster price
+04:45 patterns at different times throughout
+04:46 the data we record our normalized
+04:48 pattern and the current index finally we
+04:50 update the indices of the last found
+04:52 perceptually important points then
+04:54 continue looping through the rest of the
+04:56 data set after we have done this we have
+04:58 a collection of unique patterns the
+04:60 prices made throughout the data given I
+05:02 should note that we do not pay attention
+05:04 to the time between the points making up
+05:06 the pattern just the levels of price
+05:08 throughout the pattern now with our
+05:10 collection of normalized price patterns
+05:12 we will cluster them into similar groups
+05:14 there is a large variety of clustering
+05:15 algorithms each with its own merits and
+05:17 weaknesses but one important feature we
+05:19 need is the ability to classify new
+05:21 observations into a cluster this way we
+05:24 can use the found patterns on out of
+05:25 sample data I'm going to elect to use
+05:27 the simple well-known K means clustering
+05:30 this algorithm clusters data into a set
+05:32 number of clusters the cluster centers
+05:34 are the mean values of all the samples
+05:36 within a cluster new samples can be
+05:38 assigned to a cluster by finding the
+05:40 cluster center that is the closest to it
+05:42 I won't cover the algorithm here but
+05:44 there are many resources available
+05:45 online explaining it if you are
+05:47 unfamiliar when clustering these pattern
+05:50 shapes with the K means algorithm we
+05:51 have an important decision to make how
+05:53 many clusters do we use if we use less
+05:56 clusters then the amount of price shapes
+05:58 in each cluster will be higher which
+06:00 allows us to have a higher sample size
+06:02 and thus higher confidence when we
+06:03 assess the performance of the cluster of
+06:06 price shapes however using less clusters
+06:08 will group price shapes that are less
+06:10 similar so we may miss out on a truly
+06:12 good pattern that exists but is lumped
+06:14 in with less Salient price shapes there
+06:16 is no perfect solution to this problem
+06:18 and it is certainly something requiring
+06:20 further research but a decent approach I
+06:22 found is using the silhouette method the
+06:24 silhouette method scores each sample for
+06:26 how well it fits into its cluster
+06:28 samples that fit nicely toward the
+06:30 Center of their cluster score high while
+06:32 samples that are on the Outer Edge lying
+06:34 in between two clusters will get a lower
+06:36 score the silhouette score can be
+06:38 averaged across all samples and this
+06:40 gives us an idea of how well the
+06:41 clustering performs by using this method
+06:44 we can compare the silhouette score when
+06:45 using K means with five clusters versus
+06:48 10 clusters and select the better
+06:50 performing amount of clusters I'll leave
+06:52 the citation for the silhouette method
+06:54 in the description if you want more
+06:55 detail but thankfully there is a python
+06:58 library to do the work for us so let's
+06:60 look at the code for clustering to do
+07:02 the clustering we will use the piie
+07:04 clustering Library these are the Imports
+07:07 that we need this is the same train
+07:10 function we saw earlier after finding
+07:12 the unique perceptually important Point
+07:14 patterns we use the silhouette karch to
+07:16 try different amounts of clusters I have
+07:19 it set to try five clusters up to 40
+07:21 clusters we get the best amount of
+07:23 clusters from the silhouette search then
+07:25 we call the function K means cluster
+07:27 with the amount the silhouette method
+07:29 deemed best the K means clustering
+07:31 algorithm needs initial cluster censers
+07:33 to start the optimization we get the
+07:35 initial censers with the K means Plus+
+07:38 initializer then we pass the initial
+07:40 clusters and the unique pit patterns to
+07:42 the c means instance and process we get
+07:45 the cluster centers and cluster
+07:47 membership of each sample and the data
+07:49 set at this point the price shapes are
+07:51 placed into clusters now we assess the
+07:53 Clusters and select the ones that preced
+07:55 movements and price to assess the
+07:57 performance of each cluster I employ a
+07:59 simple holding period each time a
+08:01 pattern of a given cluster is found we
+08:03 look at the Market's price change over
+08:05 the next eight candles in the example
+08:07 we've used so far we have found five
+08:09 perceptually important points on 24
+08:11 candles of data since we are looking at
+08:13 patterns that span 24 candles I think a
+08:15 natural holding period would be less
+08:17 than 24 I chose six as 1/4 of the
+08:20 pattern length seems like a reasonable
+08:22 prediction Horizon this choice is fairly
+08:25 arbitrary but we have to pick something
+08:27 over the course of the training set we
+08:29 will find the Mar ratio for each cluster
+08:31 the Martin ratio is calculated by
+08:33 dividing the total return by the ulcer
+08:35 index the ulcer index is calculated by
+08:38 summing the square draw down at each
+08:40 candle in the data set this causes the
+08:42 Martin ratio to be punished by both the
+08:43 length and depth of draw Downs if a
+08:46 cluster of patterns have smaller draw
+08:48 Downs or recover quickly from draw Downs
+08:50 then they will have a higher Martin
+08:51 ratio the developer of the Martin ratio
+08:54 has an excellent article describing it
+08:55 in detail which I link below after we
+08:58 find the Martin ratio for for each
+08:60 cluster we will select the best pattern
+09:02 for trading long and the best pattern
+09:04 for trading short we will combine the
+09:06 signals of the best long and short
+09:08 patterns then compute the Martin ratio
+09:10 on the combined version this will be our
+09:12 final performance figure let's look at
+09:15 the code for this back looking at the
+09:17 train function I didn't mention this
+09:20 earlier but at the start we compute the
+09:22 logarithmic returns of the closing price
+09:25 and shift them forward by one candle we
+09:27 will use these returns in a moment after
+09:30 clustering the patterns we call the
+09:32 function get cluster signals and here is
+09:35 the function we Loop through each
+09:38 cluster found for each cluster we create
+09:40 a signal concurrent with the closing
+09:42 price array we passed in earlier we
+09:44 initialize it as all zeros we Loop
+09:47 through each member of the cluster we
+09:50 get the index in the closing price array
+09:52 that this cluster member or pattern
+09:54 happens the index is the last candle in
+09:56 the pattern we set the signal array to
+09:59 one for the set hold period we used six
+10:02 so this will add six ones after this
+10:05 pattern occurred to the signal array
+10:07 then we add our signals to this list it
+10:09 is a class variable back to the train
+10:11 function after Computing our cluster
+10:13 signals we call the assigned clusters
+10:16 function we Loop through each cluster we
+10:19 multiply the cluster signal by the
+10:21 logarithmic Returns the cluster signal
+10:23 is composed of zeros and ones so this
+10:26 gives us all the returns that a cluster
+10:28 was exposed to the market we comp the
+10:30 Martin ratio from these returns we'll
+10:32 look at this function in a second but no
+10:34 it returns a number we record the Martin
+10:36 ratio for each cluster after the loop we
+10:39 find the cluster index of the highest
+10:40 Martin ratio this is the best long
+10:43 pattern then we find the cluster index
+10:45 of the lowest Martin ratio this will be
+10:47 our short pattern we record the long and
+10:50 short pattern in these lists I
+10:52 experimented with selecting multiple
+10:53 patterns and I used a list to record the
+10:55 selected patterns here is the Martin
+10:58 ratio function it is passed an array of
+11:00 log returns we first sum the returns if
+11:03 the sum is negative we set this Boolean
+11:05 as true flagging for short trading and
+11:08 we also flip the signs we get the
+11:10 cumulative sum of returns we
+11:12 exponentiate them for computing
+11:14 percentage draw down we also convert it
+11:16 to a panda series to use the cumulative
+11:18 Max function in this line we are
+11:20 dividing the current sum of returns by
+11:22 the max sum we've seen so far we
+11:24 subtract one from this quotient this
+11:27 gives us the percentage draw down at
+11:29 each candle we Square this percentage
+11:31 and sum the squared percentage at each
+11:33 bar this is the ulcer index we complete
+11:36 the ulcer index by dividing by the size
+11:38 of the array and taking the square root
+11:40 the Martin ratio is the total return
+11:42 divided by the ulcer index if we flag
+11:45 these returns as a short pattern earlier
+11:47 we set the Martin ratio to negative this
+11:50 way the best long pattern will be the
+11:52 maximum value found and the best short
+11:54 pattern will be the minimum value found
+11:56 back to the train function once more we
+11:58 find our final Mar ratio with this
+12:00 function get total performance this
+12:03 function is built to handle selecting
+12:05 multiple long and short patterns if you
+12:06 want to experiment but it works just
+12:08 fine with just the one selected here we
+12:11 create a long and short signal of zeros
+12:13 for the length of the data we Loop
+12:16 through each cluster if the cluster is a
+12:18 member of the selected long patterns we
+12:20 add the cluster signal to the long
+12:22 signal if the cluster is a member of the
+12:24 selected short patterns we add the
+12:26 cluster signal to the short signal we
+12:28 divide the signal by the number of
+12:30 selected patterns in this case it's just
+12:33 one so no effect we multiply the short
+12:35 signal by ne1 to flip the signs we
+12:38 combine the signals by adding them we
+12:40 multiply the combined signal by the
+12:42 returns then we pass these combined
+12:44 returns to the git Martin function we
+12:46 covered earlier at this point we found a
+12:48 pattern for trading long and a pattern
+12:50 for trading short from the data let's
+12:52 run this program on 2 years of hourly
+12:54 Bitcoin data from the beginning of 2018
+12:57 to the end of 2019 the silhouette meth
+12:59 decided that 16 clusters was the best
+13:02 amount here are the cluster centers of
+13:04 the long and short patterns discovered
+13:06 the long pattern is shown in green while
+13:08 the short pattern is shown in red here
+13:10 is every member of the Clusters found in
+13:13 the test period the patterns are fairly
+13:15 loose there is quite a bit of variation
+13:17 around the cluster centers here are the
+13:19 cumulative log returns of the long short
+13:21 and combined patterns on the insample
+13:24 data they look pretty good but these are
+13:26 insample results we selected these
+13:28 patterns because they were were the best
+13:30 so there is a strong selection bias in
+13:32 these results to compare the strength of
+13:34 the selection bias versus the strength
+13:36 of the actual patterns in the data we
+13:38 will perform a Monte Carlo permutation
+13:40 test to do this we will permute the
+13:42 price returns to create a new permuted
+13:44 price path this permuted price path has
+13:47 an identical return distribution but all
+13:49 the legitimate patterns that may or may
+13:51 not be present on the actual path are
+13:53 destroyed all that remains in the
+13:54 permuted price path is noise we will run
+13:57 our entire procedure again on this pred
+13:59 price path build our unique perceptually
+14:02 important Point patterns cluster them
+14:04 and select the best performing clusters
+14:06 we will compare the Martin ratio we find
+14:08 on the permuted path to the one we found
+14:10 on the actual price path if the result
+14:13 we find on the permuted price path is
+14:15 weaker than what we find on the actual
+14:16 price path then that serves as evidence
+14:18 that there are legitimate patterns in
+14:20 the actual data the more times we
+14:22 permute the price and do this test the
+14:24 more evidence we gain I generated 100
+14:27 permutations of the price from the start
+14:29 of 18 to the end of 2019 and found the
+14:32 Martin ratio for each of them here are
+14:34 the Monte Carlo test results the Martin
+14:36 ratios found on each of the permutations
+14:39 is displayed as a histogram while the
+14:41 Martin ratio on the actual price is
+14:43 displayed as a red line the actual data
+14:45 is ahead of all the permutations this is
+14:48 good evidence that there is something
+14:50 present in the actual data that is not
+14:52 present in the price permutations let's
+14:54 look at the code for the Monte Carlo
+14:56 test the Monte Carlo permutation
+14:58 function is controlled by this parameter
+15:00 and Reps the number of Monte Carlo
+15:03 repetitions we will use it defaults to
+15:06 -1 which means we don't do the Monte
+15:08 Carlo test after we have finished the
+15:11 entire procedure on real data we are
+15:13 left with the final Martin ratio of the
+15:15 combined best long and short pattern we
+15:18 save this in the variable fit Martin we
+15:21 return here if the Monte Carlo test is
+15:23 disabled we Loop for each of the
+15:26 repetitions requested these two lines
+15:28 Shuffle the log returns of the original
+15:30 data we can catenate the first value of
+15:33 the original array and the shuffled
+15:34 returns we set the class variable data
+15:37 as the cumulative sum of the shuffled
+15:39 returns now we do everything exactly the
+15:42 same as we did before but this time we
+15:43 are using permuted data we find the
+15:46 unique pit patterns cluster them find
+15:48 the cluster signals select the best then
+15:51 we get our final performance figure on
+15:53 the permuted data this is what we
+15:55 compare to the performance figure found
+15:57 on real data we save this performance
+15:59 figure from the permuted data into this
+16:01 list we've seen that our data mining
+16:04 process is finding something stronger on
+16:05 real data than it finds on noise or
+16:07 permeated data so at this point we'll
+16:10 try using our found patterns on out of
+16:12 sample data we will use a walk forward
+16:14 test to see if our patterns work on out
+16:16 of sample data I'll again use hourly
+16:18 Bitcoin data but from the beginning of
+16:20 2018 to the end of 2022 we will train on
+16:23 two years of data and test on one year
+16:25 of data so in this case finding patterns
+16:28 with 2018 and 2019 data then testing
+16:31 them on 2020 then training on 2019 and
+16:34 2020 and testing on 2021 and so on let's
+16:38 look at the code for this and then I'll
+16:39 show the results before we go over the
+16:41 walk forward code there is one more
+16:43 function we need to go over in the pit
+16:45 pattern minor class the class we've been
+16:48 looking at so far this function predict
+16:50 is for out of sample use it takes a list
+16:53 of perceptually important points as
+16:55 input we zcore normalize the input then
+16:58 we loot through all the cluster centers
+17:01 and find the cluster center that is the
+17:03 closest to the input this line here
+17:05 finds the ukan distance between the
+17:07 input and the center if the closest
+17:10 Center is one of the selected long
+17:12 patterns we return one if the closest
+17:14 Center is one of the short patterns we
+17:16 return negative 1 otherwise we return
+17:19 zero here is the script for the walk
+17:21 forward test we load data in from a CSV
+17:24 then convert the data into logarithmic
+17:26 prices we get the closing price array we
+17:29 create an instance of this class WF pip
+17:32 minor which is short for walk forward
+17:34 perceptually important Point minor we
+17:36 will look at this class in a second but
+17:38 we pass in the parameters for the
+17:39 pattern mining end pips look back and
+17:42 hold period we have already discussed
+17:44 the train size is set to two years in
+17:46 hourly data and the step size is set to
+17:49 one year in hourly data we create a
+17:51 signal list of zeros the same size is
+17:53 the array we Loop through each index in
+17:56 the array and call the classes update
+17:58 signal method to fill out our signal
+18:00 list this function Returns the current
+18:02 signal for that index in the array after
+18:05 the loop we add the signal to the data
+18:06 frame compute the next returns and
+18:08 multiply the signal by the returns to
+18:10 get the out of sample returns let's look
+18:12 at the class in the initialized function
+18:14 we save our inputs and do class
+18:16 variables next train is the index of the
+18:19 closing price array when we will find
+18:21 the patterns these variables hold the
+18:23 current signal and hold period of the
+18:25 system we create an instance of the pit
+18:27 pattern minor class which we already
+18:29 went over with the inputs specified the
+18:31 class has only one function update
+18:33 signal we already saw the loop that uses
+18:36 it we check if the current index is
+18:38 equal to the next train variable if it
+18:40 is we call the train function of the
+18:42 pattern mining class we update the next
+18:44 train variable by adding the step size
+18:47 we keep track of the hold period and
+18:49 signal with these two if statements if
+18:51 the current hold period is above one we
+18:52 decrement if the hold period is zero we
+18:55 set the current signals to zero at each
+18:57 index we find the current perceptually
+18:58 important points we pass the Y values of
+19:01 the points into the predict function the
+19:03 predict function returns 0 1 or 1 if the
+19:07 return value is not zero we set the
+19:08 current signal and set the hold period
+19:10 to the value specified then return the
+19:12 current signal here are the out of
+19:15 sample results this is the cumulative
+19:17 log returns from the walk forward code
+19:20 we just saw it is the combined
+19:22 performance of both long and short
+19:23 patterns found we can see that the
+19:25 patterns found on 2018 and 2019 did very
+19:28 well throughout 2020 but the performance
+19:31 decayed afterward essentially flat it
+19:34 seems the patterns found in Prior data
+19:35 did not continue to work into 2021 and
+19:38 2022 but the performance of 2020 shows
+19:41 this type of strategy has some potential
+19:44 what we did in this video is find
+19:45 similar structures in price and attempt
+19:47 to build trading patterns from them what
+19:49 I showed only scratches the surface of
+19:51 what is possible the code shown should
+19:53 be viewed more as a toy than a fully
+19:55 fledged trading system it has a long way
+19:58 to go the results are not Stellar but I
+20:00 wanted to show a complete example of
+20:02 pattern mining a major issue with this
+20:04 implementation is the clustering is
+20:06 highly dependent on the random seed it
+20:09 will return different clusters each run
+20:11 this Randomness is from the
+20:12 initialization of the Clusters solving
+20:15 for the optimal K means is an MP hard
+20:17 problem and what we actually get is only
+20:19 a local Optimum also each portion of the
+20:22 algorithm has plenty of room for
+20:23 improvement we could better represent
+20:25 the patterns we could find a better way
+20:26 to Cluster or even skip the cluster and
+20:29 do a nearest neighbor approach we could
+20:31 also evaluate the patterns differently
+20:33 Beyond a simple hold period but
+20:35 hopefully this video gives you some
+20:36 ideas for your own trading and research
+20:39 I would like to make more videos on this
+20:40 topic in the future there is quite a bit
+20:42 to be done that's it for this one thank
+20:44 you for watching

@@ -35,6 +35,14 @@ logs/
 # Project-specific runtime state
 agents/*/state.json
 oversight/risk_dashboard.json
+oversight/subagent_requests/
+oversight/subagent_responses/
+
+# Data files
+data/
+*.db
+*.sqlite
+*.sqlite3
 
 # Celery Beat schedule database
 celerybeat-schedule

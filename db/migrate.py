@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Database migration runner for Ztrade.
+"""Database migration runner for Ztrade (SQLite).
 
 Runs SQL migration files in order from db/migrations/ directory.
 Tracks applied migrations in a migrations table.
@@ -7,44 +7,34 @@ Tracks applied migrations in a migrations table.
 import os
 import sys
 from pathlib import Path
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import sqlite3
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from cli.utils.logger import get_logger
+from ztrade.core.logger import get_logger
+from ztrade.core.database import get_database_path
 
 logger = get_logger(__name__)
 
 
-def get_database_url():
-    """Get database URL from environment."""
-    return os.getenv(
-        'DATABASE_URL',
-        'postgresql://ztrade:ztrade_dev_password@localhost:5432/ztrade'
-    )
-
-
 def create_migrations_table(conn):
     """Create migrations tracking table if it doesn't exist."""
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-                id SERIAL PRIMARY KEY,
-                migration_file VARCHAR(255) UNIQUE NOT NULL,
-                applied_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            migration_file TEXT UNIQUE NOT NULL,
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     logger.info("Migrations tracking table ready")
 
 
 def get_applied_migrations(conn):
     """Get list of already applied migrations."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT migration_file FROM schema_migrations ORDER BY id")
-        return {row[0] for row in cur.fetchall()}
+    cursor = conn.execute("SELECT migration_file FROM schema_migrations ORDER BY id")
+    return {row[0] for row in cursor.fetchall()}
 
 
 def get_pending_migrations(migrations_dir, applied):
@@ -67,16 +57,14 @@ def apply_migration(conn, migrations_dir, migration_file):
         sql = f.read()
 
     try:
-        # Execute migration
-        with conn.cursor() as cur:
-            cur.execute(sql)
+        # Execute migration (may contain multiple statements)
+        conn.executescript(sql)
 
         # Record migration
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO schema_migrations (migration_file) VALUES (%s)",
-                (migration_file,)
-            )
+        conn.execute(
+            "INSERT INTO schema_migrations (migration_file) VALUES (?)",
+            (migration_file,)
+        )
 
         conn.commit()
         logger.info(f"✅ Successfully applied: {migration_file}")
@@ -96,12 +84,11 @@ def run_migrations(dry_run=False):
         logger.error(f"Migrations directory not found: {migrations_dir}")
         return False
 
-    database_url = get_database_url()
-    logger.info(f"Connecting to database...")
+    db_path = get_database_path()
+    logger.info(f"Connecting to database: {db_path}")
 
     try:
-        conn = psycopg2.connect(database_url)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        conn = sqlite3.connect(db_path)
 
         # Ensure migrations table exists
         create_migrations_table(conn)

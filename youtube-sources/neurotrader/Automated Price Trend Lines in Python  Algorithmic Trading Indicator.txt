@@ -1,0 +1,166 @@
+00:00 in this video I'll show you how to
+00:01 automatically identify trend lines on
+00:03 price data with python it uses a unique
+00:06 algorithm I created to optimally fit
+00:08 trend lines that I have not seen
+00:09 anywhere else I'll first explain how the
+00:11 algorithm works then show the python
+00:13 code so you can try for yourself the
+00:15 visualization you're currently seeing is
+00:16 the upper and lower trend lines fit to
+00:18 the most recent 24 candles of data the
+00:21 algorithm has only a single parameter
+00:22 the number of candles to fit a trend
+00:24 line on I'll be publishing some videos
+00:26 showing trading strategies that use this
+00:28 algorithm in the future so subscribe to
+00:30 not miss those there are two versions of
+00:32 this algorithm will show they're nearly
+00:33 identical one fits the trend lines with
+00:35 respect to the high and low prices of
+00:37 the candles shown in white the other if
+00:39 it's the trend lines using just the
+00:41 closing price shown in blue let's start
+00:43 with the closing price version here is a
+00:46 section of closing price data with 72
+00:48 samples we'll start with the lower trend
+00:50 line the first step is to find the line
+00:52 of best fit this is your standard least
+00:54 squared error line the next step is to
+00:56 find the data point that is the furthest
+00:58 below the line in this case it's here
+00:60 marked with a red X I'll call this the
+01:03 pivot point now we can adjust the best
+01:05 fit lines intercept so that the line
+01:07 goes through the Pivot Point from here
+01:09 we use a gradient descent to find the
+01:11 optimal slope of all lines going through
+01:13 the pivot point to find the line that
+01:14 has the minimum squared distance from
+01:16 the data while also being below every
+01:18 point in the data the same process is
+01:21 used to find the upper shred line we
+01:23 find the pivot point that is the highest
+01:24 above the line of best fit then find the
+01:26 line going through the pivot point that
+01:28 is the closest to the data while also
+01:30 being above each point let's look at the
+01:32 python code that implements this
+01:34 algorithm the full code is available on
+01:36 GitHub and is linked in the description
+01:38 we'll start with fitting trend lines on
+01:40 the closing price this is implemented in
+01:42 the function fit trendline single it
+01:44 takes a single array as input the trend
+01:46 lines are fit to the data in this array
+01:48 first we get the slope and intercept of
+01:50 the line of best fit with numpy's
+01:52 polyfit function we use them to get the
+01:54 value of the line at each point in the
+01:56 array we find the pivot Points for both
+01:58 trend lines using numpy's ARG Max and
+01:60 argument main functions which return the
+02:02 index of the maximum and minimum values
+02:04 in an array respectively the main work
+02:06 of the algorithm is done in the optimize
+02:08 slope function but first let's look at
+02:11 the check trendline function this is
+02:13 used by the optimizing function this
+02:15 function assesses a potential trend line
+02:17 we pass a Boolean specifying if it is
+02:19 the upper or lower trend line I use the
+02:22 support and resistance terminology for
+02:24 this it also takes the Pivot Point index
+02:26 the slope being tested and the data we
+02:29 first find The Intercept of the line
+02:31 passing through the Pivot Point with the
+02:33 given slope we subtract the data from
+02:35 the line then test to ensure that it is
+02:37 less than or greater than all the data
+02:39 points depending on what type of trend
+02:40 line it is I used a small value instead
+02:43 of 0 for this check this is because
+02:45 floating Point error occasionally causes
+02:47 issues if the trend line is invalid the
+02:49 function returns a negative value as a
+02:51 flag otherwise we return the sum of
+02:53 squared differences this is what we will
+02:55 be minimizing now to the optimized slope
+02:58 function which minimizes the sum of
+02:60 squared differences with radiant descent
+03:02 we passed the type of trend line the
+03:04 pivot point and the initial slope value
+03:06 for the optimization which is the slope
+03:08 value of the line of best fit which we
+03:10 already found first we set the slope
+03:12 unit which is an ad hoc amount based on
+03:14 the data to change the slope by this is
+03:17 multiplied by the current step variable
+03:19 the current step variable will be
+03:21 decreased as the optimization converges
+03:23 we assess the initial slope with our
+03:25 check trendline function and begin the
+03:27 optimization Loop it runs until the step
+03:30 size has reached the minimum value
+03:32 to find the derivative I use numerical
+03:34 differentiation we increased the slope
+03:36 by a very small amount and see if the
+03:38 error went up or down this gives us the
+03:41 direction to change the slope if
+03:42 increasing the slope increase the error
+03:44 we make a new slope by decreasing the
+03:46 current best slope by the current step
+03:48 multiplied by the slope unit and vice
+03:50 versa we test our new slope value if the
+03:53 new slope value created either an
+03:55 invalid trend line or had a larger
+03:57 distance from the data we reduce our
+03:59 step size and move to the next iteration
+04:02 if the new slope was an improvement we
+04:04 record it and reassess our derivative on
+04:06 the next iteration and that's it we
+04:08 return the slope and intercept of the
+04:10 optimized trend line to fit trend lines
+04:12 on high and low data we need to take in
+04:14 the high low and close we find the line
+04:17 of best fit using the close and find our
+04:19 upper and lower pivots using the high
+04:21 and low prices time then when we call
+04:23 optimize slope we pass in the low price
+04:25 and high price for each trend line and
+04:27 I'll show a quick example of how you can
+04:29 use this on price data we load some data
+04:31 from a csb this is daily Bitcoin data I
+04:34 take the logarithm of the prices to have
+04:36 normalized scaling we set a look back I
+04:39 chose 30 days we Loop through each
+04:41 candle in the data set and pass our 30
+04:43 most recent candles into our fit trend
+04:46 lines function we record the upper and
+04:48 lower trend line slope at each candle
+04:50 again use the support and resistance
+04:52 terminology this creates a pretty cool
+04:55 indicator now we can see how the
+04:56 trendline slopes change throughout time
+05:01 the algorithm presented offers a unique
+05:04 approach for automating trend lines its
+05:06 main benefit is it has only one
+05:07 parameter and can work on any size and
+05:09 section of input data its main drawback
+05:11 is that it is computationally expensive
+05:13 if you download the code for yourself
+05:15 you will notice it takes a decent amount
+05:17 of time to compute every candles trend
+05:19 lines even on daily data I originally
+05:21 implemented this algorithm in C plus and
+05:23 re-implemented it in Python for this
+05:26 video C plus plus is probably more
+05:28 appropriate for this algorithm if you
+05:30 were to use the python implementation on
+05:32 a lower time frame such as hourly or 15
+05:34 minute data it might take too long and
+05:36 you probably will get bored anyways I'll
+05:38 be showing off applications and trading
+05:40 strategies using this algorithm in the
+05:42 future so subscribe to see that thanks
+05:44 for watching bye

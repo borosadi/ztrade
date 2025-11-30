@@ -1,9 +1,9 @@
 {
   "agent_id": "agent_iwm",
-  "status": "running",
-  "cycles_completed": 8,
-  "started_at": "2025-11-15T19:26:32.817129",
-  "last_cycle_at": "2025-11-16T14:01:32.323257",
+  "status": "stopped",
+  "cycles_completed": 0,
+  "started_at": "2025-11-19T17:33:18.371233",
+  "last_cycle_at": null,
   "last_error": null,
-  "interval_seconds": 300
+  "interval_seconds": 900
 }

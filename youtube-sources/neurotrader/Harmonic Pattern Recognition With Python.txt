@@ -1,0 +1,643 @@
+00:00 in this video I'll explain and show
+00:02 python code for the pattern recognition
+00:04 of many popular xabcd harmonic patterns
+00:08 such as the gartly pattern or bat
+00:10 pattern we will back test the found
+00:12 patterns using Bitcoin data and study
+00:14 their performance we will build up to
+00:17 the harmonic patterns throughout the
+00:18 video but let's start with the golden
+00:20 ratio this is the golden ratio
+00:23 1.618 this is the Fibonacci sequence if
+00:27 we divide one of the numbers in it by
+00:28 the previous number we get the golden r
+00:30 ratio the further into the sequence we
+00:32 get the more it approaches the golden
+00:35 ratio the reciprocal of the golden ratio
+00:37 is
+00:38 0.618 the golden ratio has some
+00:41 interesting properties and occasionally
+00:42 shows up in mathematics and nature at
+00:45 this point a lot of trading content will
+00:47 start feeding you some new age
+00:49 about how this number is sacred or
+00:51 unlocks the keys to the universe for
+00:52 this reason I've long been skeptical
+00:54 about this area of trading some of the
+00:56 stuff out there feels rather close to
+00:58 astrology or some other nonsense don't
+01:00 get me wrong the golden ratio is a real
+01:03 thing but I have my doubts about its
+01:05 role in the financial markets despite
+01:07 this I'm going to try my best to provide
+01:09 an objective analysis on the topic the
+01:12 core concept that Fibonacci Traders will
+01:14 talk about are Fibonacci retracements
+01:16 and projections it is said that
+01:18 financial markets will often retrace
+01:20 from a movement in price by 0.618 or
+01:23 1.618 from the previous move these
+01:26 Fibonacci retracements are often
+01:28 components of harmonic patterns which
+01:30 will we look at later to get the
+01:32 retracement ratio between two segments
+01:33 in price we find the vertical height of
+01:35 each of them then divide them to get the
+01:37 ratio throughout this video we will use
+01:40 the directional change or zigzag
+01:42 algorithm to segment the price I explain
+01:44 and show code for this algorithm in my
+01:46 video about chart patterns I recommend
+01:49 watching or rewatching the part of the
+01:50 video about directional change first
+01:52 this video will be difficult to watch
+01:54 without a good understanding the
+01:56 directional change algorithm always
+01:58 finds alternating tops and bottoms by
+01:60 check if the price has retraced by a set
+02:02 percentage from its recent lowest or
+02:04 highest value I call that percentage
+02:06 Sigma we will use the sigma parameter
+02:09 quite a bit throughout this video here's
+02:11 some Candlestick data with the
+02:12 directional change drawn in white the
+02:14 sigma set to 1% now I'll add the
+02:17 directional change with the sigma set to
+02:18 3% in blue you can see how the larger
+02:21 percentage causes the tops and bottoms
+02:23 to be found less frequently and the
+02:25 price segments are larger let's look at
+02:27 code to compute the retracement ratios
+02:29 for each of the price segments found by
+02:30 the directional change algorithm then
+02:32 look at the density of the retracement
+02:34 ratios to see if we can find the golden
+02:36 ratio we're currently in the file with
+02:39 the directional change function the code
+02:41 for this was went over in the chart
+02:42 pattern algorithms video I added a
+02:45 function to it that we'll use in this
+02:46 video called get extremes it takes a
+02:48 data frame of open high low close data
+02:51 and the percentage value Sigma we call
+02:53 the directional change function which
+02:55 returns two lists of the found tops and
+02:58 bottoms we convert these lists to data
+03:01 frames we add a column specifying that
+03:03 they are a top or a bottom one for a top
+03:06 negative one for bottoms then we
+03:08 concatenate the two data frames and we
+03:10 sort the index so they are in order here
+03:13 is what the data Frame data looks like
+03:15 the data frame index comp I is the
+03:17 confirmation index of each top and
+03:19 bottom I shortened extreme to EXT
+03:22 extreme I is the index of the actual top
+03:25 or bottom extreme p is the price of the
+03:28 top or bottom for many applications it's
+03:30 useful to have the tops and bottoms
+03:32 separate that's why the original
+03:34 function returns two lists but for
+03:36 studying retracements we want them
+03:38 together moving over to retracement
+03:40 ratios. Pi this script computes
+03:42 retracement ratios for several values of
+03:44 the sigma parameter and plots their
+03:46 density we load in hourly Bitcoin data
+03:49 from a CSV then we Loop through several
+03:51 Sigma values we use the git extremes
+03:54 function we compute the vertical height
+03:56 of each price segment by finding the
+03:58 difference between each extreme price
+03:60 and the previous extreme price the
+04:02 pandas function shift will lag the
+04:04 column by the specified amounts we get
+04:06 the absolute value of the difference
+04:08 because we care about the height not the
+04:10 direction we save this to the column seg
+04:12 height short for Segment height we get
+04:14 the retracement ratio by dividing the
+04:16 current segment height by the previous
+04:18 segment height we will look for
+04:20 occurrences of the golden ratio in this
+04:23 column we also compute the logarithmic
+04:25 ratios here's a histogram of the actual
+04:28 ratios and here is the histogram of the
+04:30 logarithmic ratios the logarithmic
+04:33 ratios will be negative when the actual
+04:34 retracement ratio is below one note the
+04:37 bodal distribution price segments tend
+04:40 to be bigger or smaller than the
+04:42 previous segment more often than they
+04:43 are equal we're going to perform a
+04:45 kernel density estimation to find the
+04:47 most common retracement ratios we will
+04:49 use the logarithmic ratios for the
+04:51 kernel density estimate we pass in the
+04:54 logarithmic retracement ratios to the
+04:55 scipi function gosi and KDE to get our
+04:58 kernel we set the bandwidth to a very
+05:00 low number in most cases the bandwidth
+05:03 should be set to accurately model the
+05:05 distribution but we're not trying to
+05:07 model the distribution here here's a
+05:09 plot of the density estimation with a
+05:11 bandwidth of one and 0.1 the small
+05:14 bandwidth value causes there to be a lot
+05:16 of spikes in the density estimate this
+05:19 is not normally what you want from a
+05:20 density estimate but I opted for a low
+05:23 value of the bandwidth to see if the
+05:25 spikes show up at the golden ratio the
+05:27 rest of the code finishes the density
+05:29 estimate
+05:30 we get a range of values run them
+05:32 through the kernel we add the density
+05:34 values to a panda series and we
+05:37 exponentiate the retracement values to
+05:39 return them to the normal scale then we
+05:41 plot the density estimate and plot
+05:43 vertical lines at 0.618 and 1.618 the
+05:47 golden ratio numbers here is the
+05:49 retracement density with a sigma of 1%
+05:52 I'll zoom in to the interesting part
+05:54 there is a mild Spike around the golden
+05:56 ratio here is the retracement density
+05:58 with a sigma of 2% neither of the ratios
+06:01 really appear to stand out here is the
+06:03 retracement density with a sigma of 3%
+06:06 here we do see a pretty notable Spike at
+06:08 the golden ratio I find this quite
+06:10 interesting as the density is only
+06:11 showing what is observed in the data I
+06:13 can't say for sure why this increased
+06:15 density is there if I had to guess I
+06:17 would say there might be a
+06:18 self-fulfilling prophecy many Fibonacci
+06:20 enthusiastic Traders start reversing
+06:22 their position at a 1.618 retracement or
+06:25 it's just a coincidence but I don't
+06:27 think this is the footprint of human
+06:29 psychology ology or planetary alignment
+06:31 or whatever moving on with the sigma at
+06:34 4% there's a spike at 1.618 but it's not
+06:38 very prominent the 0.618 never really
+06:41 stuck out on any of these Sigma values
+06:43 the analysis I've done here isn't very
+06:45 statistically rigorous but if we're
+06:47 being generous we can say that there's a
+06:49 small amount of evidence for the
+06:50 Fibonacci stuff perhaps you could try
+06:52 running the script on some other markets
+06:54 maybe Forex or oil or something maybe
+06:57 the golden ratio will be more present
+06:59 there let's move on to the harmonic
+07:01 patterns I selected seven xabcd patterns
+07:04 for this video the gartly bat butterfly
+07:08 crab deep crab Cipher and shark patterns
+07:12 I chose them because they seem to be the
+07:14 most popular the same algorithm will
+07:16 find all seven of these patterns all
+07:18 these patterns look at the ratios
+07:20 between multiple price segments the
+07:22 ratios in all these patterns are numbers
+07:24 derived from the golden ratio here is
+07:26 the gartly pattern which I believe is
+07:28 the most wellknown of the harmonic
+07:30 patterns the ab segment and the XA
+07:32 segment should have a ratio of 0.618
+07:35 many of these patterns provide an
+07:37 acceptable range of ratios for example
+07:39 the BC segment to AB segment ratio is
+07:42 supposed to be between
+07:44 0.382 and
+07:46 0.886 the CD segment to BC segment ratio
+07:49 is supposed to be between 1.13 and 1.618
+07:53 the final ratio is between the XA
+07:55 segment and the height between A and D
+07:58 which should be 0.7 86 the bearish
+08:01 version of the garly has the same ratios
+08:03 but it's upside down they are
+08:05 symmetrical all the other patterns are
+08:07 the same but they have different numbers
+08:09 and ranges for the ratios here is one of
+08:12 the better bullish garley the pattern
+08:14 recognition algorithm finds that is very
+08:16 close to the idealized ratio in practice
+08:19 it is an unrealistic expectation to find
+08:22 exactly these ratios so we must allow
+08:24 some tolerance notice the error in the
+08:27 top left corner later we will experiment
+08:30 with different error thresholds to
+08:32 explain how the pattern recognition
+08:34 works and how the trade entries and
+08:36 exits work let's use this particular
+08:38 bullish garly pattern as an example in
+08:40 this case a trade is entered at the
+08:42 close of this candle this pattern is
+08:45 identified using only the entry candle
+08:47 and previous candles at this entry
+08:49 candle the retracement ratio is
+08:50 conformed to the gartly pattern within
+08:52 the error threshold the trade is exited
+08:55 at the close of this candle the exit
+08:57 happens when the directional change
+08:59 algorithm can confirms the next bottom
+09:01 let me explain again viewing what the
+09:03 directional change algorithm sees here's
+09:05 the same gartly pattern after it has
+09:07 formed with a little more context each
+09:10 of the white lines are the price
+09:11 segments the directional change
+09:13 algorithm finds let's move backwards in
+09:15 time to show how the identification
+09:17 happens the directional change algorithm
+09:20 cannot confirm a top or bottom until the
+09:22 price has retraced by the given
+09:24 percentage the high of this candle will
+09:27 be the C point of the gartly pattern but
+09:29 the high is not yet confirmed we wait
+09:31 until the price has retraced by a set
+09:33 percentage from the highest high since
+09:35 the last confirmed bottom at this point
+09:38 the price has retraced by enough to
+09:40 confirm what will be the C point and the
+09:42 scarly once what will be the C point is
+09:45 confirmed the algorithm starts checking
+09:47 for bullish patterns it uses the lowest
+09:50 low since the confirmed C points as the
+09:52 D points in the pattern so here we check
+09:55 the ratios currently the ratios do not
+09:58 align with any pattern so we move on to
+09:59 to the next candle we again use the most
+10:02 recent candle as the D point in the
+10:04 pattern and check the retracement ratios
+10:06 using this new candles low as the D
+10:09 points in the pattern the ratios do
+10:11 align with the garly pattern so we take
+10:13 an entry at the close of this candle to
+10:16 exit these harmonic patterns I opted to
+10:18 wait until the directional change
+10:19 algorithm confirms the next bottom we
+10:22 exit at the close of this green candle
+10:24 when a bottom is
+10:26 confirmed this same procedure is done
+10:28 for bearish patterns but reversed after
+10:31 the directional change algorithm
+10:33 confirms a top or bottom that would be
+10:35 the C points in a xabcd harmonic pattern
+10:39 we start checking the ratios with the
+10:41 most recent candle as the D points
+10:43 bullish patterns are searched for after
+10:45 a top is confirmed and bearish patterns
+10:48 are searched for after a bottom is
+10:50 confirmed let's now go through the code
+10:52 for the pattern recognition all the code
+10:55 for the harmonic pattern recognition can
+10:57 be found in harmonic patterns STP first
+10:60 we Define the patterns I made a data
+11:02 class xabcd to hold the ratios of the
+11:06 patterns each of the ratios can take on
+11:08 three types a float a list or none we
+11:11 Define the gartly pattern here the first
+11:14 ratio of the gartly is set to 0.618 so
+11:17 we just pass in the float the second
+11:19 ratio of the gartly pattern the one
+11:20 between segments ab and BC has a range
+11:23 of acceptable values to define a range
+11:25 of acceptable values we pass in a list
+11:28 of two numbers the lower and upper
+11:30 bounds of the acceptable ratios some
+11:32 patterns have a range of acceptable
+11:34 values for a given segment While others
+11:36 have a set value for the same segment
+11:39 the pattern recognition can handle any
+11:40 combination of ranges single values or
+11:43 none none means the ratio is ignored for
+11:46 example the shark pattern does not care
+11:48 about the xaab ratio so we pass on none
+11:52 if you want to experiment with other X
+11:54 ABCD patterns this is where you can add
+11:56 or remove them make sure all the
+11:58 patterns that you want want to use are
+12:00 added to this
+12:02 list there is another data class xabcd
+12:05 found this holds the integer indices of
+12:08 the candle data for a found pattern the
+12:11 pattern recognition function will return
+12:13 lists of instances of this class for
+12:16 each of the patterns found you can pass
+12:18 the found instances into this function
+12:20 to plot them here is the main procedure
+12:23 of these scripts we load in hourly
+12:25 Bitcoin data from a CSV we call get
+12:28 extremes which we already went over
+12:30 returning a data frame of the found tops
+12:32 and bottoms by the directional change
+12:33 algorithm we'll start with a sigma of 2%
+12:36 but we'll utilize different values later
+12:38 on then we call the function find X ABCD
+12:41 passing in the open high low close data
+12:44 the extremes and an error threshold
+12:46 we'll experiment with different values
+12:48 of the error threshold later but 0.2 is
+12:51 a reasonable default value here's the
+12:53 find xabcd function we start by getting
+12:56 the retracement ratios we saw this
+12:59 already when we were looking at the
+13:00 retracement ratio script then we prepare
+13:03 the output dictionary for each pattern
+13:05 we create two signals concurrent with
+13:07 the candle data denoting the position at
+13:09 each candle for both bullish and bearish
+13:12 patterns we also create two lists for
+13:15 the instances of the xabcd founds data
+13:18 class for bullish and bearish patterns
+13:21 first comp is the index of the first
+13:23 confirm directional change top or bottom
+13:25 we start the main loop at this index
+13:28 extreme I is the index of the most
+13:30 recent confirmed top or bottom the entry
+13:33 taken variable and the pattern used
+13:34 variable control the trades entry taken
+13:37 is zero when no pattern was found and
+13:39 thus no trade is active if a bull
+13:41 pattern is found it is set to one if a
+13:43 bare pattern is found it is set to
+13:44 negative one pattern used will be set to
+13:47 a string the name of the pattern that
+13:49 caused an entry we start the loop
+13:51 through the candle data we check if the
+13:53 next extreme is confirmed if it is we
+13:55 increment extreme I we also set entry
+13:57 ticken to zero if there was the trade
+13:60 active we exit on this candle's close we
+14:02 check if there is an active trade if
+14:05 there is we set the bull or bare signal
+14:07 to the appropriate value for this candle
+14:09 we can then continue on in the loop the
+14:12 exit is designed to have no overlapping
+14:14 trades we break out of the loop if we
+14:16 are at the end of the extremes data this
+14:19 is to prevent an outof bounds index for
+14:21 extreme ey we continue if extreme I is
+14:24 less than three we need at least a few
+14:26 extremes to find the patterns if we made
+14:28 it this far in theop Loop without
+14:30 reaching a continued statement then we
+14:31 start looking at the ratios to find the
+14:33 patterns we get the type of the last
+14:35 confirmed extreme this will be negative
+14:37 1 if it's a bottom or one if it's a top
+14:40 we get the index of the candle data of
+14:42 the most recent confirmed extreme this
+14:44 will be the C points in the xabcd
+14:47 pattern we get the price of the current
+14:49 high or low to service the D points and
+14:50 our xabcd pattern if the most recent
+14:53 extreme was a top we are checking for
+14:55 bull patterns and vice versa we check
+14:58 that the current low or high is the
+14:60 highest or lowest since the last
+15:02 confirmed extreme if not we continue
+15:04 this is mainly an optimization but we
+15:06 need to ensure that we're using the
+15:08 lowest or highest price for the D point
+15:10 now we can compute the ratios involving
+15:12 D with the current candle we compute the
+15:15 BC CD ratio and the XA a ratio we now
+15:19 have all the ratios of a xabcd pattern
+15:22 we now check which pattern if any these
+15:25 ratios are similar to with this block of
+15:28 code we check all the patterns we
+15:29 defines whichever patterns ratios are
+15:32 closest to the ratios observed we will
+15:34 select we Loop through each of the
+15:36 defined patterns we use a function get
+15:38 error to find the error attributed to
+15:40 each of the four ratios making up one of
+15:42 these patterns we pass it the ratio we
+15:44 observe in the data and the ideal ratio
+15:47 that the pattern specifies we'll look at
+15:49 the get error function in a moment but
+15:51 no it returns a float we add up the
+15:53 error for each of the four ratios we
+15:56 then compare the error to the best error
+15:57 we've found so far if the current tested
+15:60 pattern is better we update the best
+16:01 error and the type of pattern if the
+16:04 closest matching patterns error is below
+16:06 the threshold we defines we will save
+16:08 the pattern and enter a trade we save
+16:10 the indices of the candle data that make
+16:12 up our pattern into an instance of xabcd
+16:15 founds we set the variable pattern used
+16:17 to the pattern founds if the most recent
+16:20 confirmed extreme was at top then this
+16:22 is a bullish pattern otherwise it's a
+16:24 bearish pattern if it's a bullish
+16:26 pattern we set entry tick to one we
+16:28 append bold to the pattern name we set
+16:30 the bull signal for the found pattern to
+16:32 one for the current candle and we save
+16:35 the found pattern into the bull patterns
+16:37 list we do the same if it was a bearish
+16:39 pattern let's look through the get error
+16:41 function the function is passed the
+16:43 actual ratio what we observe and the
+16:46 idealized ratio defined by the pattern
+16:48 the idealized ratio can be a set number
+16:51 a list defining a range of acceptable
+16:53 values or none meaning ignore if the
+16:55 ideal ratio is none we just return zero
+16:58 we're comparing trement ratios we are
+17:00 going to find the difference between the
+17:01 observed ratios and the idealized ones
+17:04 but because they are ratios we need to
+17:06 take the logarithm before we difference
+17:08 them we check if the patterns to find
+17:10 ratio is a list if it is we get the two
+17:12 ratio bounds and convert them to
+17:14 logarithmic ratios if the observed ratio
+17:17 is within the bounds we return zero no
+17:19 error if the observed ratio is outside
+17:21 the bounds we find how much outside the
+17:23 bounds it is with this line I chose to
+17:26 multiply the air for range bounds by two
+17:29 because having a range of acceptable
+17:30 values is already pretty lenient so I
+17:32 think it should be punished harder if it
+17:33 is outside the range if you want to not
+17:35 allow ratios outside the range at all
+17:37 you can uncomment this El statement here
+17:40 this way if it is outside the range it
+17:42 returns a huge value for error that will
+17:44 be much larger than any reasonable error
+17:46 threshold in the case that the idealized
+17:49 ratio defined by the pattern is a single
+17:51 number we simply find the absolute
+17:53 difference between the observed ratio
+17:55 and the defined
+17:56 ratio here's the accumulative log return
+17:59 for all the harmonic patterns combined
+18:01 with the directional change percentage
+18:03 set to 2% and the error threshold set to
+18:06 0.2 I guess we can say it kind of worked
+18:09 it did pretty well in 2022 this harmonic
+18:11 pattern strategy has two adjustable
+18:13 parameters the directional change
+18:15 percentage will adjust the size and
+18:17 scale of the patterns found and the
+18:19 error threshold will control how closely
+18:21 the patterns found match the idealized
+18:24 ratios let's first look at how the
+18:26 patterns perform across different
+18:27 percentages for the direct change
+18:29 algorithm holding the error Threshold at
+18:32 0.2 here is the cumulative log return
+18:35 for all the patterns combined with
+18:36 several values of the directional change
+18:39 Sigma here are the profit factors at
+18:41 each Sigma some of course will do better
+18:44 than others and the lower values of the
+18:46 sigma parameter appear to do better
+18:48 these results are the combination of all
+18:51 the defined harmonic patterns let's look
+18:53 at the performance of each of the
+18:55 patterns individually to see if some
+18:57 Stand Out here's the profit Factor of
+18:59 each of the patterns individually at
+19:01 different Sigma values a strategy is
+19:03 profitable when the profit factor is
+19:05 above one so I drew a white line at one
+19:08 to easily visualize the only pattern
+19:10 that was profitable at every Sigma value
+19:12 was the shark pattern every other
+19:14 pattern worked on some values but not
+19:17 others the crab pattern has a few very
+19:19 high profit factors but if we look at
+19:22 the number of times each pattern was
+19:23 found we can see that the crab is quite
+19:25 rare compared to the other patterns
+19:27 further testing of these patterns could
+19:29 could be done but I really don't think
+19:30 any pattern stands out as Superior so
+19:33 I'll continue combining all the harmonic
+19:34 patterns into a single strategy back to
+19:37 the combined performance at different
+19:39 Sigma values Lux certainly played a role
+19:42 in the better performing Sigma values
+19:44 simply selecting the best is probably
+19:46 not the way to go instead I'm going to
+19:49 average the signals at each Sigma
+19:50 parameter to create a single signal this
+19:53 way the strategy is trading every
+19:55 harmonic pattern on every scale let's
+19:58 look at the code for the this we create
+20:00 a signal for the combination of all
+20:02 patterns and all scales we Loop through
+20:05 several values of the sigma parameter we
+20:07 use the G extremes function with the
+20:09 current value we find the xabcd patterns
+20:13 we create a signal for combining all the
+20:15 harmonic patterns with the current Sigma
+20:17 parameter we Loop through each pattern
+20:19 and add each pattern's bullish and
+20:20 bearish Signal together to the combined
+20:23 signal the trade entries and exits were
+20:25 designed in a way so there's no
+20:27 overlapping trades so we can simply add
+20:29 these signals together we add this
+20:31 signal to the all combined signal after
+20:34 looping through all the signal values we
+20:36 divide the signal by the number of
+20:37 parameters used we multiply this final
+20:40 signal by the next return to get our
+20:42 strategy returns we then compute the
+20:44 profit Factor here is the signal we just
+20:47 computed combining all patterns on all
+20:49 scales notice it is bounded between -1
+20:52 and 1 but takes on many different values
+20:55 because trades triggered by patterns on
+20:57 different scales can happen at the at
+20:59 the same time we have to adjust the
+21:01 signal by dividing by the number of
+21:02 Sigma values used this signal
+21:05 essentially acts as a position sizing
+21:07 scheme when the signal is at 0.5 we take
+21:10 a half-sized long position and when it's
+21:12 at NE .5 we take a half-sized short
+21:15 position here is the cumulative log
+21:17 return of that signal it's not very good
+21:20 it has a profit factor of
+21:22 1.026 but we will use this method of
+21:24 combining all harmonic patterns on
+21:26 multiple scales to compare different
+21:27 error thresholds by combining several
+21:30 Sigma values with equal weighting we
+21:32 essentially reduce the number of
+21:33 adjustable parameters to one that being
+21:35 the error threshold we know that the
+21:37 combined signal with an error threshold
+21:39 of 0.2 yields a profit factor of 1.026
+21:42 so let's try other error thresholds here
+21:45 are the profit factors across error
+21:47 thresholds with a higher tolerance of
+21:49 error there will be more instances of
+21:52 qualifying harmonic patterns in my
+21:54 opinion if harmonic patterns were truly
+21:56 effective we would see higher profit
+21:57 factors at lower error tolerances and as
+22:00 the error tolerance increased the
+22:02 performance would dwindle but we see the
+22:05 opposite the lower values of air
+22:07 tolerance perform worse every value for
+22:10 air tolerance does have a profitable
+22:11 profit Factor though the performance is
+22:13 weak but consistently positive which I
+22:16 suppose can be interpreted as evidence
+22:18 in favor of harmonic patterns the python
+22:21 implementation I provided took about 1
+22:23 hour to compute this plot further
+22:25 research into this will require some
+22:28 optimization here's the cumulative log
+22:30 return with an air threshold of
+22:32 0.5 this is benefiting from a selection
+22:35 bias I chose the best error threshold
+22:37 from the previous graph but even with
+22:39 the benefit of selection bias it's not
+22:42 that great it does have periods of
+22:43 pretty good performance though I wanted
+22:45 to show it because we went through the
+22:47 effort of finding the best error
+22:48 threshold overall we saw that these
+22:50 harmonic patterns have some positive
+22:52 performance but they are weak at least
+22:54 for Bitcoin perhaps they work better on
+22:56 other markets the exits I use used are
+22:59 not typical for harmonic patterns they
+23:01 are quick to take a profit and perhaps
+23:03 they don't let the subsequent price move
+23:04 run its course my overall opinion is I
+23:07 do think there may be patterns in the
+23:09 ratios between consecutive price
+23:10 movements that are predictive of price
+23:13 reversals and some harmonic patterns may
+23:15 be fairly close to some of those
+23:17 reversal patterns which might be why we
+23:19 saw better performance with a higher
+23:21 error tolerance but I think the target
+23:23 ratios being derived from the Fibonacci
+23:25 sequence is essentially pseudo science I
+23:28 would like to make a sort of follow-up
+23:30 video to this one finding the optimal
+23:32 ratios from the data and not from sacred
+23:35 numbers if patterns in the retracement
+23:38 ratios do exist I'd be curious to see
+23:40 what they are I imagine the optimal
+23:42 ratios would shift Through Time
+23:44 requiring a walk forward training
+23:45 process every successful price pattern
+23:48 data mining scheme I've worked with has
+23:50 this trade anyways that's it for this
+23:52 one thank you for watching

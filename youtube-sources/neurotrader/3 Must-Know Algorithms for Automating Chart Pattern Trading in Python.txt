@@ -1,0 +1,274 @@
+00:00 in this video we're going to look at
+00:02 three essential algorithms for
+00:03 automating chart patterns and other
+00:05 forms of technical analysis such as
+00:07 support and resistance levels the three
+00:09 algorithms provide different approaches
+00:11 for systematically identifying local
+00:13 tops and bottoms in the price many chart
+00:15 patterns are built from local tops and
+00:17 bottoms for example The Head and
+00:18 Shoulders pattern is built around five
+00:20 local turning points in price many other
+00:22 chart patterns are also built from local
+00:24 tops and bottoms for a human identifying
+00:26 these turning points is quite easy you
+00:28 just look but for a computer it's not so
+00:30 straightforward I'll explain three
+00:32 different algorithms to identify turning
+00:34 points and show python implementations
+00:35 after that I'll compare and contrast
+00:37 each algorithm in the future I'll create
+00:39 videos that make use of these algorithms
+00:41 to identify well-known chart patterns
+00:43 bind horizontal support and resistance
+00:45 levels and to data mine novel chart
+00:47 patterns so subscribe to not miss those
+00:49 our first algorithm is the rolling
+00:51 window method it identifies local tops
+00:53 and bottoms by checking if a point is
+00:55 the highest or lowest point compared to
+00:57 its neighboring points for example let's
+00:59 look at this point here marked with red
+01:00 we verify that it is a local top by
+01:03 seeing if it is greater than its two
+01:04 adjacent points marked with white in
+01:06 this case we only shift one point on
+01:08 either side of the point in question the
+01:09 number of adjacent points to check is
+01:11 the one parameter for this algorithm I
+01:13 will call this parameter the order this
+01:15 red point is a local top of order one
+01:17 but if we check the two adjacent points
+01:19 we find a value greater than it marked
+01:20 with orange thus this point is not a top
+01:23 of order two here is every local top of
+01:25 order 1 in this sample here's every top
+01:27 with order two and here's every top with
+01:29 order three as the order increases the
+01:31 number of local tops we find decreases
+01:33 as we're being more selective local
+01:35 bottoms can be found in the same way but
+01:37 instead we check if the point in
+01:38 question is less than its neighboring
+01:40 points instead here's every local bottom
+01:42 of order one order two and order three
+01:45 it's important to note since we're
+01:47 focusing on a trading application these
+01:49 local tops and bottoms are identified
+01:50 with a lag equal to the order parameter
+01:52 for example the top of order 2 marked
+01:54 here in red is not confirmed until the
+01:57 time marked in green let's look at the
+01:58 code this function checks if there is a
+01:60 the top of a given order confirmed that
+02:02 the current index the index of the
+02:04 potential top is delayed by the order
+02:06 given to avoid looking into the future
+02:08 we check if there is a point that is
+02:09 greater than it on either side if there
+02:12 is not we have found a top bottoms are
+02:14 found in the same way but with a less
+02:16 than comparison instead all local
+02:18 extremes can be found by looping through
+02:21 each candle in the data and checking if
+02:23 there is a high or a low if either is
+02:25 found we record the index of
+02:27 confirmation the index of the extreme
+02:29 and the price of the extreme the same
+02:31 algorithm is implemented in the scipy
+02:34 library called ARG Rel extrema but if
+02:36 you choose to use it be careful you are
+02:39 not cheating with future data while this
+02:41 algorithm can be used with high and low
+02:43 prices of candles I think using just the
+02:45 clothes is better because if the market
+02:47 made information like this a local high
+02:49 and low of order 2 would be identified
+02:51 on the same candle which seems illogical
+02:53 to me I've seen this algorithm called
+02:55 many different things and it is a very
+02:57 obvious way to find local tops and
+02:59 bottoms or second algorithm is
+03:01 directional change sometimes called
+03:03 zigzag this algorithm identifies tops
+03:05 and bottoms when the price has retraced
+03:07 a given amount from its most recent high
+03:08 or low price this algorithm always
+03:11 produces alternating local tops and
+03:13 bottoms let's slow down this
+03:14 visualization to better explain at this
+03:17 point in time the last confirmed local
+03:19 extreme is a bottom meaning the next
+03:21 local extreme will be a top this orange
+03:23 candle is the highest high we have seen
+03:25 since our confirmed bottom the yellow
+03:27 line is our confirmation line it is
+03:29 three percent below the high of the
+03:31 orange candle the highest high once the
+03:33 price closes below this level the price
+03:35 is retraced Enough from the high and the
+03:37 top is confirmed at the high of the
+03:38 orange candle like so
+03:41 now that we've confirmed to this top we
+03:44 have a new orange candle it is the
+03:46 lowest low since our confirmed top this
+03:48 blue line is our new confirmation line
+03:50 it is three percent above the low of the
+03:52 orange candle once the price closes
+03:54 above the Blue Line the bottom is
+03:56 confirmed and the process repeats the
+03:58 percentage we use to define a
+03:60 retracement is the parameter for this
+04:02 algorithm here we use three percent if
+04:04 it is set to a higher value local tops
+04:06 and bottoms will be found less often set
+04:07 to a lower value and they will be found
+04:09 more often the amount of lag to confirm
+04:11 tops and bottoms is undefined it varies
+04:13 each time let's look at the code we have
+04:15 a function directional change that takes
+04:17 in the close high and low and sigma
+04:20 which is the percentage retracement we
+04:22 track the type of the last extreme top
+04:24 or bottom with the Boolean upzig we
+04:27 arbitrarily initialize it as true we
+04:29 have to initialize it as something this
+04:31 may cause the results to be slightly
+04:33 inaccurate at the very beginning of the
+04:35 data we keep track of the current index
+04:37 and price of the pending top or bottom
+04:40 and these variables these values
+04:42 correspond to the orange candle we saw
+04:44 in the visualization we Loop through
+04:46 each candle in the data set if the last
+04:48 confirmed extreme was a bottom we go
+04:50 into this block if we find a higher high
+04:52 we update the pending top variables
+04:54 otherwise we check if the price has
+04:56 closed beyond our retracement threshold
+04:59 if it has we record a confirmed top set
+05:02 our upsig Boolean to false and record
+05:04 the penetrating candles low for the
+05:07 upcoming bottom if the last confirmed
+05:09 extreme was atop we do everything
+05:11 opposite we check for a lower low and
+05:13 update our pending bottom otherwise we
+05:15 check if a retracement has occurred if
+05:17 it has we record our confirmed bottom
+05:19 and setup for the next top
+05:21 over time I've seen several variations
+05:24 of this algorithm the version of the
+05:26 algorithm I showed uses the candles high
+05:28 and low prices and a percentage
+05:30 retracement using just the closing price
+05:32 as an option A measure of volatility
+05:34 such as the average true range could be
+05:36 used to quantify retracements instead of
+05:38 the percentage our third algorithm is
+05:41 perceptually important points this
+05:43 algorithm is given a section of price
+05:45 data and a number of points defined
+05:46 let's look at an example here's a
+05:49 section of price data we will find five
+05:51 perceptually important points the first
+05:53 two are always the first and last points
+05:55 in the data we then make a line between
+05:57 the two points we then find the distance
+05:59 from each inner point to the line the
+06:01 point with the maximum distance is
+06:03 selected as the next Point lines will be
+06:05 drawn between Pairs of adjacent selected
+06:07 points we look at the distance for each
+06:10 point and again select the one with the
+06:12 maximum distance we repeat this process
+06:14 once again for the fifth perceptually
+06:16 important point we could continue for as
+06:18 many points as we desire but here we
+06:19 only wanted five so we stop here let's
+06:22 look at the code we Implement
+06:23 perceptually important points with this
+06:26 find Pips function Pips is an acronym
+06:28 for perceptually important points the
+06:31 function takes an array the number of
+06:32 Pips defines and the distance measure
+06:35 the visualization showed the vertical
+06:37 distance but euclidean and perpendicular
+06:39 distance are other options in my
+06:41 experience all three of the distance
+06:43 measures often choose the same points
+06:45 but it's worth testing if one measure
+06:47 has outstanding performance for a
+06:49 particular application anyways we record
+06:52 the index and prices of the selected
+06:54 points and Pips X and Pips y
+06:57 respectively we initialize them with the
+06:60 first and last points this outer loop
+07:02 selects each point until we reach the
+07:04 specified number
+07:06 we create variables for tracking the max
+07:08 distance founds we then Loop through
+07:11 each pair of adjacent points we've bound
+07:13 so far we find the slope and intercept
+07:15 of the line between the current pair of
+07:17 adjacent points then we Loop through
+07:19 each point between the current pair of
+07:21 adjacent points we calculate the
+07:23 distance depending on the selected
+07:24 distance measure then check for and
+07:27 record a larger distance if bounds after
+07:29 looping through each point we record the
+07:31 point of Max distance as the next Point
+07:34 perceptually important points was
+07:36 introduced in 2001 I have the original
+07:38 source of the algorithm Linked In the
+07:40 description I encourage interested
+07:43 viewers to look at perceptually
+07:44 important points in Google Scholar there
+07:47 are a ton of interesting papers using
+07:49 this algorithm and financial
+07:50 applications
+07:51 we looked at three algorithms to
+07:54 identify local tops and bottoms in price
+07:56 one or more of these algorithms can be
+07:58 used as building blocks for automating
+07:60 chart patterns or other forms of
+08:02 technical analysis they all use
+08:04 different criteria for finding points of
+08:06 interest in the price the rolling window
+08:08 method focuses on time it will find a
+08:11 bottom if a point is the lowest in a
+08:13 neighboring window but it does not care
+08:15 how much lower a point is as long as it
+08:17 is lower the rolling window method would
+08:20 identify these two formations as a
+08:22 bottom despite one being more extreme
+08:23 the directional change method focuses on
+08:26 price if the retracement threshold was
+08:28 high enough it could ignore the less
+08:30 extreme bottom shown on the right the
+08:32 perceptually important points method is
+08:34 quite a bit different from the other two
+08:35 methods it selects points based on its
+08:37 distance from adjacent selected points
+08:39 its focus is Loosely a middle ground
+08:42 between the time focused rolling window
+08:43 method and the price focused directional
+08:46 change method its other major difference
+08:48 is it functions on a slice of data I've
+08:51 found all three algorithms useful for
+08:53 different applications and technical
+08:55 analysis automation sometimes they can
+08:57 be used interchangeably other times one
+08:59 is a clear choice I found all three
+09:02 useful for finding chart patterns
+09:04 directional change is good for
+09:05 identifying support and resistance
+09:07 levels and perceptually important points
+09:09 are particularly good for data mining
+09:12 novel patterns with a body of literature
+09:14 behind it I'll be creating videos that
+09:16 use these algorithms for a variety of
+09:18 trading applications cool stuff is
+09:20 coming down the pipes subscribe that's
+09:23 all for this one thanks for watching

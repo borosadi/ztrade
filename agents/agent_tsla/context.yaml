@@ -21,3 +21,21 @@ personality:
 
 performance:
   allocated_capital: 10000.0
+
+operations_log:
+  - date: '2025-11-19'
+    session: 'Loop Manager CPU Spin Fix & Decision Mode Testing'
+    findings:
+      - 'Fixed CPU spin bug in loop manager (market hours wait logic)'
+      - 'Loop manager was spinning at 99% CPU when market closed (time_to_market_open returned 0)'
+      - 'Added max(1, ...) to ensure minimum 60-second sleep'
+      - 'Added --detach mode for background operation (reduced monitoring from 0.5s to 30s)'
+      - 'Subagent mode: Process crashes silently, needs investigation'
+      - 'Automated mode: Requires valid ANTHROPIC_API_KEY in .env'
+      - 'Database: PostgreSQL not running - no historical bars available for technical analysis'
+      - 'Sentiment analysis working: News +0.23, Reddit -0.10, SEC +0.01 (33% agreement)'
+    status: 'System operational, awaiting market hours for live trading'
+    next_steps:
+      - 'Fix/investigate subagent mode crash'
+      - 'Start PostgreSQL for historical data'
+      - 'Consider switching to automated mode for production'

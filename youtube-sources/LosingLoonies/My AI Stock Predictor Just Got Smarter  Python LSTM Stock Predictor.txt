@@ -1,0 +1,229 @@
+00:00 In my previous video, I used your
+00:02 suggestions to make incremental
+00:03 improvements to my long short-term
+00:04 memory stock price predictor.
+00:07 While this code in its increasing
+00:09 complexity is already quite impressive,
+00:11 it still has a long way to go. We're
+00:12 using daily stock price data, ticker
+00:14 news sentiment, and even insider trading
+00:16 information, all to increase the
+00:17 accuracy of our code and accurately
+00:19 predict the value of a list of 500 stock
+00:21 tickers for the next day. With this
+00:22 information, we should be able to back
+00:23 test historical data to validate if this
+00:25 code does indeed work to make us rich or
+00:27 maybe it's all just a huge waste of
+00:28 time. I will continue to implement your
+00:30 suggestions since we have hundreds of
+00:32 willing participants in this experiment.
+00:34 All of whom are much smarter and more
+00:35 capable than me, literal financial
+00:37 investors and mathematicians. You guys
+00:39 have left so many fantastic comments and
+00:41 I have spent hours dissecting your
+00:42 recommendations to find those of which
+00:44 we can implement to make the biggest
+00:45 impact on our code. And to those who
+00:47 have asked, I've included a link in the
+00:48 description to the GitHub sponsors page
+00:50 where you can download this code for
+00:51 yourself. This is over 6 months of work
+00:53 most evenings after my day job. All
+00:55 proceeds will go to paying off my
+00:56 $17,000 of student loans. So let's get
+00:59 into this.
+01:01 What you should do is predict two to six
+01:03 timespan predicted returns such as 1
+01:07 day, 1 week, 1 month, 6 month, etc.
+01:11 A lot of you pointed this out. The model
+01:13 suffers from one key issue. Predicting
+01:14 stock values day-to-day is just too
+01:16 difficult with all the variables at
+01:17 play. And it's hard to be entirely
+01:19 certain whether or not a stock will
+01:20 actually go up. The model is getting
+01:21 caught in the noise of random
+01:23 fluctuations of the market. Instead, we
+01:25 should try to predict several different
+01:26 time horizons. Let's say 1 day, 1 week,
+01:29 1 month, 6 months. And implementing this
+01:31 should be pretty straightforward, but we
+01:33 still require a methodology for
+01:34 determining when we should actually buy
+01:36 based on all these predictions that
+01:37 maximizes our return. So here's my idea.
+01:39 Let's say, for example, that our model
+01:41 is highly accurate and that we predict
+01:43 that a particular stock will go up by 5%
+01:45 during our 1-day forecasting prediction.
+01:47 Now, let's say that we also predict that
+01:49 the same stock will go up by 5% in our
+01:51 six-month prediction. Which one would
+01:52 you pick? Would you decide to buy now
+01:54 and sell it closed the next day and lock
+01:56 in this guaranteed 5% return? Or would
+01:58 you hold it for 6 months and still
+01:59 receive the same 5% return? I mean, the
+02:02 answer seems kind of obvious to me. We
+02:04 would probably pick the 1-day option.
+02:05 That way, we get the 5% return, then we
+02:07 allocate our cash into a different stock
+02:09 based on what our machine learning model
+02:10 determines. So, then what we really care
+02:12 about is the normalized return. To
+02:13 determine which time horizon to invest
+02:15 in, we should choose the option with the
+02:16 largest value of the predicted return
+02:19 divided by the number of days. So the
+02:21 oneweek normalized return is the one
+02:23 week predicted return divided by five,
+02:25 for example, because there's only 5 days
+02:27 in the trading week. So what does this
+02:28 look like once it's implemented?
+02:30 Choosing stocks based on this method is
+02:32 much more logical. Here we start the
+02:34 first day of the back test by checking
+02:35 the prediction on all 500 of our stocks,
+02:38 looking at which one has the highest
+02:40 return in any normalized time window,
+02:42 and then selecting the stock with the
+02:43 highest return. So we can see that right
+02:46 here we only held for about 1 day. But
+02:48 then on the next iteration we couldn't
+02:49 find a single day where there was a
+02:51 higher return over the oneweek return.
+02:52 So we decided to buy and hold for about
+02:54 1 week. This will iterate along window
+02:56 to window and hopefully give us a better
+02:57 return. Have the bot calculate a
+02:59 confidence score based on the most
+03:01 predictive features.
+03:02 You want your model to compute a
+03:04 favorability or confidence score for
+03:06 each asset. Go long on stocks with above
+03:08 average favorability.
+03:10 Okay. Confidence scores or uncertainty
+03:11 in the prediction came up a lot. This is
+03:13 a massive opportunity to really improve
+03:16 this code. And to be honest, I'm
+03:17 surprised I hadn't implemented this
+03:18 sooner. There are just so many things
+03:19 that we can do to keep improving this
+03:21 model. We would trust predictions with a
+03:22 very low standard deviation or very low
+03:24 uncertainty. We can use Monte Carlo
+03:26 dropout to produce a standard deviation
+03:27 for our predictions. The idea here being
+03:29 that if we ask a 100 slightly drunk
+03:31 versions of an expert the same question,
+03:33 if they all agree, we can probably trust
+03:35 an answer. And if they all give
+03:37 different answers, then there might
+03:38 genuinely be some uncertainty. So,
+03:40 here's where things start to get
+03:41 interesting. We're not just predicting
+03:42 returns anymore. We're actually
+03:44 accounting for uncertainty in those
+03:45 predictions. So instead of running the
+03:47 model once, I run it multiple times, say
+03:49 50 passes. And then we take the mean and
+03:51 standard deviation of all of those
+03:53 individual predictions. The standard
+03:54 deviation just describes the spread in
+03:56 the predictions or the uncertainty. And
+03:58 the mean gives the expected predicted
+04:00 return. So when I'm deciding which stock
+04:02 and time window to buy, I don't just
+04:04 take the raw predicted return. I
+04:05 subtract a portion of that uncertainty
+04:07 for each stock and forecast horizon. The
+04:09 model provides an expected log return,
+04:11 some predicted log r, and an uncertainty
+04:14 estimate, so some predicted log r per
+04:16 day standard deviation. We adjust
+04:18 predictions by subtracting a multiple of
+04:20 the uncertainty to penalize trades of
+04:22 high uncertainty. A trade is only ever
+04:24 executed if the adjusted prediction
+04:26 remains positive and the probability
+04:27 that the return will be positive
+04:29 computed from the normal distribution
+04:31 exceeds 70%. This ensures that we only
+04:33 buy when the model is both optimistic
+04:35 and confident. So what does this look
+04:37 like? Let's not get ahead of ourselves.
+04:38 First, let's run the code with no
+04:39 considerations for uncertainty. Buy the
+04:41 normalized return window with the
+04:43 highest possible return. Then sell,
+04:44 rinse, and repeat. We can see that this
+04:46 is well within the one signal window and
+04:47 is on par with a buy and hold strategy.
+04:50 Not impressive at all. Now, let's enable
+04:52 considerations for uncertainty and only
+04:53 when we are above 70% confidence do we
+04:56 buy. This was my attempt to try to
+04:57 implement uncertainty or risk and I'm
+04:59 pretty sure there's a lot more you can
+04:60 do. For example, by taking the top five
+05:01 stocks with the highest probability of
+05:03 giving a high return and diversifying
+05:04 your portfolio for each stock based on a
+05:07 waiting provided by the predicted return
+05:09 and estimated uncertainty. Now, we can
+05:10 see it's actually working quite well
+05:12 here. In fact, out of all the stocks
+05:13 that it buys, 87 out of 147 saw a
+05:16 positive return, which is about a 59%
+05:19 accuracy, which doesn't tell us anything
+05:21 because the market could have had 60% of
+05:23 the days with positive returns within
+05:25 that validation window. So, a better
+05:26 description of performance might be to
+05:28 run a bunch of random portfolios where
+05:30 people are buying random stocks every
+05:32 day and selling at close the next day.
+05:34 We run 50 portfolios all simultaneously
+05:37 and we get what we see here in the thin
+05:39 white lines. We can even add a one sigma
+05:41 and three sigma band for those random
+05:43 portfolios to find out how much of an
+05:44 outlier our machine learning model is.
+05:47 If it's consistently above three sigma
+05:48 of the mean of randomness, then maybe
+05:51 this is actually working. And in fact,
+05:53 it sort of is, which is a little bit
+05:55 surprising. Here, here is the one sigma
+05:56 line, and here is the three sigma line.
+05:58 Our portfolio has actually gone above
+05:60 three sigma. And for a normal
+06:01 distribution, meaning that the
+06:02 portfolios are approximately random
+06:04 variation, there's actually a 0.27%
+06:07 chance of this occurring, which might
+06:09 suggest that the model is actually
+06:10 working. There is still so much work
+06:12 that has to be done to validate this.
+06:13 For example, is this a repeatable
+06:14 result? Potentially not. And if you want
+06:16 to mess around with this code yourself,
+06:17 I've included links in the description
+06:18 to the GitHub repository. All public
+06:20 repos are available to anyone and the AI
+06:22 stock predictor is a private repo made
+06:24 available to you upon joining as a
+06:26 GitHub sponsor. Got to pay those student
+06:28 loans. We have made some serious
+06:29 improvements to our model, but we still
+06:31 have a very long way to go. So, I'm
+06:32 asking you to do a couple of things for
+06:34 me. Keep leaving comments suggesting how
+06:36 we can improve this code. If we pull
+06:37 together the collective knowledge of
+06:38 hundreds of people, we are sure to
+06:40 advance quickly. Also, like and
+06:41 subscribe to the channel and tune in to
+06:43 the next video because we are just
+06:44 getting started. I'll see you guys.

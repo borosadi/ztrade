@@ -1,9 +1,9 @@
 {
   "agent_id": "agent_tsla",
-  "status": "running",
-  "cycles_completed": 9,
-  "started_at": "2025-11-15T19:24:27.875535",
-  "last_cycle_at": "2025-11-16T14:36:13.697419",
+  "status": "stopped",
+  "cycles_completed": 0,
+  "started_at": "2025-11-19T17:31:09.855668",
+  "last_cycle_at": null,
   "last_error": null,
   "interval_seconds": 300
 }

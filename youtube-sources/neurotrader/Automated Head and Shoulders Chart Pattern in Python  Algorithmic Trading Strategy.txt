@@ -1,0 +1,340 @@
+00:00 in this video we're going to automate
+00:01 The Head and Shoulders pattern using
+00:03 python I'll show how to find the
+00:05 patterns on any scale small or large
+00:07 I'll also show a method to identify the
+00:09 patterns early so we can test if a
+00:11 market has a tendency to finish the
+00:13 pattern I'm assuming if you clicked to
+00:15 this video you already know roughly what
+00:17 this pattern is arguably it is the most
+00:19 famous or well-known chart pattern
+00:21 according to technical analysis Dogma
+00:24 The Head and Shoulders pattern is said
+00:25 to proceed a downward move while the
+00:27 inverted version is said to proceed an
+00:30 upward move the pattern consists of five
+00:32 major turning points I'll call them the
+00:34 left shoulder left armpit head right
+00:37 armpit and right shoulder the line
+00:39 connecting the two armpits is often
+00:41 called the neckline once the price
+00:43 breaks below the neckline the pattern is
+00:44 said to be confirmed we can automate
+00:46 this pattern by using the rolling window
+00:48 algorithm to find local tops and bottoms
+00:50 in the price I covered the rolling
+00:52 window algorithm in detail in my video
+00:53 about the essential algorithms for chart
+00:55 pattern automation but quickly it just
+00:58 checks if a point is the highest or
+00:59 lowest point compared to its neighboring
+01:01 points at any point in time we can look
+01:03 at the last five major turning points
+01:05 and see if they have the shape of a head
+01:07 and shoulders pattern I employ a few
+01:09 rules to determine if the turning points
+01:11 qualify as a head and shoulders pattern
+01:13 I'll explain them using this pattern but
+01:15 know they all apply symmetrically to the
+01:16 inverted version first we check that the
+01:19 center point the head is greater than
+01:20 the two shoulders the second rule is
+01:23 checking for balance we find the
+01:24 midpoint between the shoulders and the
+01:26 respective armpits shown in purple both
+01:28 shoulders should be above the midpoint
+01:30 points the third rule is checking for
+01:32 symmetry the time between each shoulder
+01:34 and the head should be comparable if one
+01:36 is greater than 2.5 times the other then
+01:39 we disqualify the pattern these last two
+01:41 rules the balance and symmetry rules are
+01:43 from the book technical analysis for
+01:44 algorithmic pattern recognition written
+01:47 by two authors whose names I will not
+01:48 attempt to pronounce I am a big fan of
+01:50 these authors they have many cool papers
+01:52 along with this book if these rules pass
+01:54 we wait until the price closes below the
+01:56 neckline to confirm the pattern after
+01:58 implementing this I was looking at the
+01:60 MCH and I found that many times the
+02:01 candle that penetrates the neckline is
+02:03 large if we were to execute on the close
+02:05 of the penetrating candle we would have
+02:07 missed out on the majority of the move
+02:09 perhaps when Traders see that the market
+02:10 is about to complete a head and
+02:12 shoulders pattern they all jump in one
+02:14 option is to place a stop market order
+02:15 on the neckline but I think it would be
+02:17 better if we could just be a little
+02:18 early so instead of waiting for the
+02:20 penetration of the neckline we can
+02:22 confirm the pattern when the price
+02:23 closes below the midpoint between the
+02:25 right shoulder and its armpit of course
+02:27 this could lead to erroneous
+02:28 identification of The Head and Shoulders
+02:30 p pattern the price may never actually
+02:32 go below the neck but that's the price
+02:34 we pay to be a little early let's look
+02:36 at the identification code The Head and
+02:38 Shoulders pattern data is kept in this
+02:40 data class it holds all the information
+02:42 about the identified patterns we have a
+02:44 Boolean if it's inverted these are the
+02:46 indices of the input array of the major
+02:48 turning points that make up the pattern
+02:50 these are the prices at those indices
+02:52 these are the start and end points of
+02:54 the pattern we also include some
+02:56 attributes about the pattern this
+02:58 function find HS patterns finds Head and
+03:00 Shoulders patterns on an input array
+03:03 which in practice will be the closing
+03:04 price we specify an order for the
+03:06 rolling window algorithm the larger the
+03:08 order the bigger the patterns that will
+03:10 be found we also specify if we want to
+03:12 employ the early identification of the
+03:14 patterns we keep track of the most
+03:16 recent five price extremes and these
+03:18 decks or double-ended cues we Loop
+03:20 through each candle in the data set as
+03:22 the rolling window tops and bottoms are
+03:24 found we add their index to the
+03:25 double-ended cues if we don't have five
+03:27 we can't identify patterns yet so we
+03:29 continue on the rolling window algorithm
+03:31 does not guarantee that the tops and
+03:33 bottoms will alternate so we must verify
+03:35 that the recent tops and bottoms do
+03:37 alternate as the pattern consists of
+03:39 alternating tops and bottoms we start
+03:41 checking for the head and shoulder
+03:42 pattern after the rolling window
+03:44 confirms what would be the right armpit
+03:46 the right shoulder is found as the
+03:48 maximum price s the armpit I tried not
+03:50 doing this that is waiting until the
+03:52 right shoulder is identified using the
+03:54 rolling window algorithm but it often
+03:56 delays the identification of the pattern
+03:57 by a considerable amount of time
+03:59 unfortunately this improved
+04:00 identification makes the code quite ugly
+04:02 so bear with me we verify the patterns
+04:05 in the check HS pattern and check IHS
+04:07 pattern functions for head and shoulders
+04:09 and inverted Head and Shoulders
+04:11 respectively these functions return an
+04:13 instance of The Head and Shoulders data
+04:15 class if found they return none
+04:17 otherwise they are given the four
+04:19 rolling window tops and bottoms up to
+04:20 and including the armpit but not the
+04:22 right shoulder let's look at the check
+04:24 HS pattern function we first unload the
+04:26 indices of the price extremes into
+04:28 readable names we check of enough time
+04:30 has passed since the identification of
+04:32 the armpit we find the index of the
+04:34 maximum price since the right armpit
+04:37 this will serve as our right shoulder
+04:39 first we verify the head is greater than
+04:40 the two shoulders then we compute the
+04:42 two midpoints of the shoulders and
+04:44 verify the opposite shoulder is above
+04:45 the other midpoint this is the balance
+04:48 rule then we find the amount of time
+04:49 between each shoulder and the head we
+04:51 verify that the two times are comparable
+04:53 one is not greater than 2.5 time the
+04:55 other a higher degree of symmetry can be
+04:57 enforced with a lower value than 2.5 we
+05:00 compute the neckline slope and neckline
+05:02 value at the current index then we
+05:04 verify the price has broken below the
+05:05 neckline or the midpoint of the right
+05:07 shoulder depending on if we're using
+05:09 early identification or not at this
+05:11 point we have to find where the pattern
+05:12 starts as we have only looked at data
+05:14 since the left shoulder so we Loop
+05:16 backwards in time and find the first
+05:18 price below the neckline this will serve
+05:20 as the start of the pattern it's
+05:22 possible the price did not ever go below
+05:24 the neckline in which case we don't
+05:25 verify the pattern and return none this
+05:28 is not very common in practice at this
+05:30 point the pattern is confirmed we create
+05:32 an instance of the pattern data class
+05:34 and store all the information about the
+05:35 pattern in it the inverted pattern
+05:37 identification is the same but
+05:39 symmetrically flipped I won't go over
+05:41 the code here but it's available on
+05:42 GitHub Link in the description now that
+05:44 we've gone over the identification let's
+05:46 see how we can assess the pattern
+05:48 performance we can enter a position
+05:50 after a head and shoulders pattern is
+05:51 identified and I'll test two exits the
+05:54 first simulates holding a position after
+05:56 the pattern is found for the length of
+05:58 time that the head spans the length L of
+05:60 time between the two troughs or armpits
+06:02 in the pattern the bigger the pattern
+06:04 the longer the hold period the second
+06:06 employ a take profit and stop it is
+06:08 based on common technical analysis
+06:10 teachings the distance between the head
+06:12 and the neckline is the profit Target
+06:14 I'll call this the head height for a
+06:15 stop I'll use the right shoulders price
+06:18 we also employ a time limit as the width
+06:20 of the head so if the stop price or
+06:22 take-profit price is not reach in that
+06:24 time window we exit the position I'll
+06:27 apply both of these exit methods to the
+06:28 regular identification and early
+06:30 identification let's look at the code
+06:32 for these stops to find the pattern
+06:34 return for the hold period exit we just
+06:36 find the difference or percentage change
+06:38 from the price the pattern is identified
+06:40 to the future value we don't really need
+06:42 a function but for the Stop and
+06:44 takeprofit rules we do and here it is we
+06:47 give it the closing price array an
+06:48 instance of the pattern data class we
+06:51 also specify if the data is logarithmic
+06:53 prices or not if they are we just
+06:55 difference the entry and exit prices if
+06:57 not we compute the percentage change we
+06:59 set the stock top is the right shoulder
+07:01 the take profit is set as the neckline
+07:03 value at the time of identification plus
+07:05 or minus the head height depending on if
+07:07 the pattern is inverted or not we Loop
+07:09 forward after the identification and
+07:11 find the first touch of either the stop
+07:12 or take profit value after this Loop is
+07:15 complete the exit price will be set we
+07:17 then compute the pattern return between
+07:19 the entry and exit price the calculation
+07:21 will be different depending on if it's a
+07:22 long or short pattern and if we have
+07:24 logarithmic prices or not we will use
+07:26 hourly Bitcoin tether data for the
+07:28 performance testing from from 2018 to
+07:31 the end of 2022 we will test with order
+07:33 parameters from 1 to 48 here's the head
+07:35 and shoulders pattern performance with
+07:37 the hold period exit the top left graph
+07:40 shows the number of patterns found at
+07:41 each order parameter the top right is
+07:43 the average trades log return where the
+07:45 head and shoulders pattern I multiplied
+07:47 the returns by Nega -1 to simulate a
+07:49 short position while the inverted
+07:51 patterns will simulate a long position
+07:53 the bottom left is the sum of returns
+07:56 and the bottom right are the win rates
+07:58 we can see that the head and shoulders
+07:60 pattern worked on some of the parameter
+08:01 values but it's not consistent smaller
+08:03 patterns worked well larger patterns did
+08:05 okay but the mediumsized failed and were
+08:07 not profitable here's the head and
+08:09 shoulders pattern with the Stop and take
+08:11 profit rules as the exit the stop rules
+08:13 failed to increase performance it ruined
+08:15 the okay performance we saw on larger
+08:17 patterns and tended to lower the win
+08:19 rates on the parameter values where it
+08:21 did work let's look at the inverted Head
+08:22 and Shoulders results the inverted Head
+08:24 and Shoulders also fails to offer
+08:26 consistent performance only a small
+08:29 section of the parameters space yielded
+08:30 okay results here's the inverted pattern
+08:33 with the stop rules as the exit in this
+08:35 case it appears the stop rule did help a
+08:37 bit the performance is a little better
+08:39 working on larger patterns but the
+08:40 Improvement is not very significant now
+08:43 let's look to see if the early
+08:44 identification had any effect here's the
+08:47 head and shoulders with early
+08:48 identification performance using the
+08:50 holding period as an exit it doesn't
+08:52 appear to have done much the same area
+08:54 of the parameter space still works the
+08:56 number of patterns found with the early
+08:58 identification is quite a bit higher
+08:59 it's it seems the pattern almost forms
+09:01 then doesn't finish quite often here's
+09:03 the head and shoulders early
+09:04 identification with the stop exit this
+09:06 doesn't look very good at all the stop
+09:08 rule did not help the performance the
+09:10 pattern does not have good performance
+09:11 on any area of the parameter space but
+09:15 here's the inverted pattern with early
+09:16 identification it appears the early
+09:18 identification improved the inverted
+09:20 pattern quite a bit it worked on nearly
+09:22 every parameter and the win rates are
+09:23 quite high as well perhaps the market
+09:25 has a tendency to complete inverted Head
+09:27 and Shoulders patterns making it
+09:29 profitable to get in early the stop exit
+09:32 didn't seem to improve the results but
+09:34 they're still quite good with the stop
+09:36 it appears that the take-profit rule
+09:38 often prescribed with Head and Shoulders
+09:39 patterns that being a profit Target
+09:41 using the distance from the head to the
+09:43 neckline is not very effective at least
+09:45 on bitcoin it offered little if any
+09:47 Improvement on all configurations tested
+09:49 The Head and Shoulders pattern is not
+09:51 very consistent across the parameter
+09:53 space meaning that only certain sized
+09:55 patterns worked historically the
+09:57 inverted Head and Shoulders did not
+09:58 perform consistently either but the
+10:00 performance of the early identification
+10:02 turned around the inverted pattern's
+10:04 performance the early identified
+10:06 inverted pattern performed across the
+10:08 entire parameter space but the early
+10:10 identification did not help the regular
+10:12 Head and Shoulders patterns at least for
+10:14 Bitcoin the only pattern shown here that
+10:16 really worked well is the early
+10:18 identified inverted head and shoulders
+10:20 and given the other forms of The Head
+10:22 and Shoulders pattern didn't really show
+10:23 great performance I'm willing to say
+10:25 that the head and shoulders pattern
+10:26 doesn't really work well on bitcoin the
+10:29 thing about algorith mic trading is not
+10:31 everything you test will be a winner in
+10:32 fact most things you test will not work
+10:34 at all you could use the code I relas to
+10:37 test Head and Shoulders patterns on
+10:38 other markets maybe it will perform
+10:40 better on a different Market in my last
+10:43 video we tested Bull and be flags on
+10:45 bitcoin and we actually found good
+10:47 consistent performance good enough to
+10:49 inspire me to try other technical
+10:51 analysis chart patterns hence this video
+10:54 you can check that out here to see chart
+10:56 patterns actually working anyways that's
+10:58 it for this one thank you for watching
